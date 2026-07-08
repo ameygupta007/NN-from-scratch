@@ -54,8 +54,13 @@ class Value:
         return self + (-other)
     
     def __truediv__(self, other):
+        if not isinstance(other, Value):
+            other = Value(other)
         return self * other**-1
 
+    def __rtruediv__(self, other):
+        return other * self**-1
+    
     def __pow__(self, other): # other should be a constant, not Value
         assert isinstance(other, (int, float)), "only supporting int/float powers"
         out = Value(self.data**other, (self,), f'**{other}')
