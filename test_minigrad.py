@@ -17,7 +17,7 @@ def test_backward_simple():
     assert b.grad == 2.0   # dc/db = a
 
 def test_against_pytorch():
-    # micrograd
+    # minigrad
     a = Value(-4.0)
     b = Value(2.0)
     c = a + b
@@ -33,7 +33,7 @@ def test_against_pytorch():
     g.backward()
     amg, bmg, gmg = a, b, g
 
-    # pytorch, mirroring the same computation
+    # pytorch, same computation
     a = torch.Tensor([-4.0]).double(); a.requires_grad = True
     b = torch.Tensor([2.0]).double(); b.requires_grad = True
     c = a + b
@@ -52,5 +52,7 @@ def test_against_pytorch():
     # forward pass matched
     assert abs(gmg.data - gpt.data.item()) < 1e-6
     # backward pass matched
-    assert abs(amg.grad - apt.grad.item()) < 1e-6
-    assert abs(bmg.grad - bpt.grad.item()) < 1e-6
+    assert abs(amg.grad - apt.grad.item()) < 1e-6 # type: ignore
+    assert abs(bmg.grad - bpt.grad.item()) < 1e-6 # type:ignore
+
+

@@ -13,7 +13,7 @@ class Value:
 
 
     def __repr__(self):
-        return f"Value:{{name: {self.label}, data: {self.data}}}"
+        return f"Value(data={self.data})"
     
     def __add__(self, other):
         if not isinstance(other, Value):
@@ -83,6 +83,14 @@ class Value:
         out = Value((math.exp(2*x) - 1) / (math.exp(2*x) + 1), (self,), 'tanh')
         def _backward():
             self.grad += (1 - out.data**2) * out.grad
+        out._backward = _backward
+        return out
+
+    def relu(self):
+        x = max(0, self.data)
+        out = Value(x, (self,), 'ReLU')
+        def _backward():
+            self.grad += out.grad * (out.data > 0)
         out._backward = _backward
         return out
 
