@@ -11,6 +11,9 @@ class Neuron:
         val = sum(wi*xi for wi,xi in zip(self.w,x)) + self.b
         # activation function - could use relu as well
         return val.tanh()
+    
+    def parameters(self):
+        return self.w + [self.b]
 
 class Layer:
     def __init__(self, nin, nout):
@@ -19,7 +22,12 @@ class Layer:
     def __call__(self, x):
         outs = [n(x) for n in self.neurons]
         return outs[0] if len(outs) == 1 else outs
-
+    
+    def parameters(self):
+        params = []
+        for n in self.neurons:
+            params.extend(n.parameters())
+        return params
 class MLP:
     def __init__(self, nin, nouts):
         # nin - number of inputs
@@ -33,13 +41,10 @@ class MLP:
             x = layer(x)
         return x
     
-    def params(self):
+    def parameters(self):
         # return a list of all the Value objects representing paremeters in this MLP
-        parameters = []
+        params = []
         for l in self.layers:
-            for n in l.neurons:
-                parameters.extend(n.w)
-                parameters.append(n.b)
-
-        return parameters
+            params.extend(l.parameters())
+        return params
     
