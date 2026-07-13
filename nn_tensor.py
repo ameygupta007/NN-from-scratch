@@ -3,7 +3,7 @@ import numpy as np
 
 class Layer:
     def __init__(self, nin, nout):
-        self.W = Tensor(np.random.rand(nin, nout)) # each row represents weights of a neuron
+        self.W = Tensor(np.random.randn(nin, nout)) # each row represents weights of a neuron
         self.b = Tensor(np.random.rand(nout))
         self.activation = True
 
