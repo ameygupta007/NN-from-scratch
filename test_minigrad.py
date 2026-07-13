@@ -167,3 +167,63 @@ def test_tensor_matmul_chain():
     assert np.allclose(X.grad, Xt.grad.numpy())  # type: ignore
     assert np.allclose(W.grad, Wt.grad.numpy())  # type: ignore
     assert np.allclose(b.grad, bt.grad.numpy())  # type: ignore
+
+def test_tensor_matmul_1d_1d():
+    # (k,) @ (k,) -> scalar (inner product)
+    a_init = [1.0, -2.0, 3.0]
+    b_init = [4.0, 0.5, -1.5]
+
+    a = Tensor(a_init)
+    b = Tensor(b_init)
+    c = a @ b
+    c.backward()
+
+    at = torch.tensor(a_init, dtype=torch.float64, requires_grad=True)
+    bt = torch.tensor(b_init, dtype=torch.float64, requires_grad=True)
+    ct = at @ bt
+    ct.backward()
+
+    assert c.data.shape == ()
+    assert np.allclose(c.data, ct.detach().numpy())
+    assert np.allclose(a.grad, at.grad.numpy())  # type: ignore
+    assert np.allclose(b.grad, bt.grad.numpy())  # type: ignore
+
+def test_tensor_matmul_1d_2d():
+    # (k,) @ (k, m) -> (m,)
+    x_init = [1.0, -2.0]
+    W_init = [[0.3, -0.7, 1.1], [1.2, 0.4, -0.5]]
+
+    x = Tensor(x_init)
+    W = Tensor(W_init)
+    y = x @ W
+    y.backward()
+
+    xt = torch.tensor(x_init, dtype=torch.float64, requires_grad=True)
+    Wt = torch.tensor(W_init, dtype=torch.float64, requires_grad=True)
+    yt = xt @ Wt
+    yt.backward(torch.ones_like(yt))
+
+    assert y.data.shape == (3,)
+    assert np.allclose(y.data, yt.detach().numpy())
+    assert np.allclose(x.grad, xt.grad.numpy())  # type: ignore
+    assert np.allclose(W.grad, Wt.grad.numpy())  # type: ignore
+
+def test_tensor_matmul_2d_1d():
+    # (n, k) @ (k,) -> (n,)
+    A_init = [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]]
+    x_init = [0.5, -1.0, 2.0]
+
+    A = Tensor(A_init)
+    x = Tensor(x_init)
+    y = A @ x
+    y.backward()
+
+    At = torch.tensor(A_init, dtype=torch.float64, requires_grad=True)
+    xt = torch.tensor(x_init, dtype=torch.float64, requires_grad=True)
+    yt = At @ xt
+    yt.backward(torch.ones_like(yt))
+
+    assert y.data.shape == (2,)
+    assert np.allclose(y.data, yt.detach().numpy())
+    assert np.allclose(A.grad, At.grad.numpy())  # type: ignore
+    assert np.allclose(x.grad, xt.grad.numpy())  # type: ignore

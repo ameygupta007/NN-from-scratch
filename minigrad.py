@@ -164,12 +164,29 @@ class Tensor:
         out = Tensor(self.data @ other.data, (self, other), '@')
 
         def _backward():
-            self.grad += out.grad @ other.data.T
-            other.grad += self.data.T @ out.grad
+            a, b, g = self.data, other.data, out.grad
+            if a.ndim == 1 and b.ndim == 1:
+                self.grad  += g * b
+                other.grad += g * a
+            elif a.ndim == 1:
+                self.grad  += g @ b.T
+                other.grad += np.outer(a, g)
+            elif b.ndim == 1:
+                self.grad  += np.outer(g, b)
+                other.grad += a.T @ g
+            else:
+                self.grad  += g @ b.T
+                other.grad += a.T @ g
         out._backward = _backward
 
         return out
 
+    def __rmatmul__(self, other):
+        if not isinstance(other, Tensor):
+            other = Tensor(other) 
+        
+        return other @ self
+    
     def __neg__(self):
         return self * -1.0
     
@@ -192,6 +209,9 @@ class Tensor:
         out._backward = _backward
 
         return out
+    
+    def __iter__(self):
+        return iter(self.data)
     
     def exp(self):
         out = Tensor(np.exp(self.data), (self, ), 'exp')
@@ -217,6 +237,17 @@ class Tensor:
         out._backward = _backward
         return out
 
+    def sum(self, axis=None, keepdims = False):
+        out = Tensor(self.data.sum(axis=axis, keepdims=keepdims), (self,), 'sum')
+
+        def _backward():
+            grad = out.grad
+            if axis is not None and not keepdims:
+                grad = np.expand_dims(grad, axis)
+            self.grad += np.ones_like(self.data) * grad
+        out._backward = _backward
+        return out
+
     def backward(self):
         self.grad = np.ones_like(self.data)
 
@@ -232,7 +263,6 @@ class Tensor:
         topo_sort(self)
         for n in reversed(topo):
             n._backward()
-
 
 def _unbroadcast(grad, shape):
     # handle grads flowing backwards to Tensors that were broadcast in the initial operation
