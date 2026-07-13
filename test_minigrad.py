@@ -58,9 +58,9 @@ def test_value_against_pytorch():
     assert abs(bmg.grad - bpt.grad.item()) < 1e-6  # type: ignore
 
 
-# --- Array: numpy-backed autograd, element-wise ---
+# --- Tensor: numpy-backed autograd, element-wise ---
 
-def test_array_forward_pass():
+def test_tensor_forward_pass():
     a = Tensor([2.0, 1.0, 3.0])
     b = Tensor([-3.0, 4.0, -1.0])
     c = Tensor([10.0, 5.0, 2.0])
@@ -68,7 +68,7 @@ def test_array_forward_pass():
     expected = np.array([4.0, 9.0, -1.0])  # 2*-3+10, 1*4+5, 3*-1+2
     assert np.allclose(d.data, expected)
 
-def test_array_backward_simple():
+def test_tensor_backward_simple():
     a = Tensor([2.0, 1.0, 3.0])
     b = Tensor([-3.0, 4.0, -1.0])
     c = a * b
@@ -77,7 +77,7 @@ def test_array_backward_simple():
     assert np.allclose(a.grad, b.data)  # dc/da = b element-wise
     assert np.allclose(b.grad, a.data)  # dc/db = a element-wise
 
-def test_array_against_pytorch():
+def test_tensor_against_pytorch():
     a_init = [-4.0, 3.0, -2.0]
     b_init = [2.0, 1.5, -1.0]
 
@@ -119,7 +119,7 @@ def test_array_against_pytorch():
     assert np.allclose(bmg.grad, bpt.grad.numpy(), atol=1e-6)  # type: ignore
 
 
-def test_array_matmul_forward():
+def test_tensor_matmul_forward():
     A = Tensor([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])         # (2, 3)
     B = Tensor([[7.0, 8.0], [9.0, 10.0], [11.0, 12.0]])    # (3, 2)
     C = A @ B
@@ -127,7 +127,7 @@ def test_array_matmul_forward():
     assert C.data.shape == (2, 2)
     assert np.allclose(C.data, expected)
 
-def test_array_matmul_backward():
+def test_tensor_matmul_backward():
     A_init = [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]]           # (2, 3)
     B_init = [[7.0, 8.0], [9.0, 10.0], [11.0, 12.0]]      # (3, 2)
 
@@ -145,7 +145,7 @@ def test_array_matmul_backward():
     assert np.allclose(A.grad, At.grad.numpy())  # type: ignore
     assert np.allclose(B.grad, Bt.grad.numpy())  # type: ignore
 
-def test_array_matmul_chain():
+def test_tensor_matmul_chain():
     # (X @ W + b) style: composition of matmul with broadcast add and mul
     X_init = [[1.0, -2.0], [0.5, 3.0], [-1.5, 2.5]]       # (3, 2)
     W_init = [[0.3, -0.7, 1.1], [1.2, 0.4, -0.5]]         # (2, 3)

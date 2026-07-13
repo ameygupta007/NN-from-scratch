@@ -126,7 +126,7 @@ class Tensor:
 
 
     def __repr__(self):
-        return f"Array(data={self.data})"
+        return f"Tensor(data={self.data})"
     
     def __add__(self, other):
         if not isinstance(other, Tensor):
@@ -184,7 +184,7 @@ class Tensor:
     def __rtruediv__(self, other):
         return other * self**-1
     
-    def __pow__(self, other): # other should be a constant, not Array
+    def __pow__(self, other): # other should be a constant, not Tensor
         assert isinstance(other, (int, float)), "only supporting int/float powers"
         out = Tensor(self.data**other, (self,), f'**{other}')
         def _backward():
@@ -235,7 +235,7 @@ class Tensor:
 
 
 def _unbroadcast(grad, shape):
-    # handle grads flowing backwards to Arrays that were broadcast in the initial operation
+    # handle grads flowing backwards to Tensors that were broadcast in the initial operation
     while grad.ndim > len(shape):
         grad = grad.sum(axis=0)
     for i, s in enumerate(shape):
