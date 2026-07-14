@@ -248,6 +248,22 @@ class Tensor:
         out._backward = _backward
         return out
 
+    def softmax_cross_entropy(self, y):
+        assert isinstance(y, np.ndarray)
+        z = self.data
+        z_shift = z - z.max(axis=-1, keepdims=True)
+        exps = np.exp(z_shift)
+        sm = exps / exps.sum(axis=-1, keepdims=True)
+        lse = np.log(exps.sum(axis=-1, keepdims=True))
+        N = z.shape[0]
+        loss_val = (-(z_shift * y).sum(axis=-1, keepdims=True) + lse).sum() / N
+
+        out = Tensor(loss_val, (self,), 'softmax_ce')
+        def _backward():
+            self.grad += (sm - y) / N * out.grad
+        out._backward = _backward
+        return out
+
     def backward(self):
         self.grad = np.ones_like(self.data)
 
