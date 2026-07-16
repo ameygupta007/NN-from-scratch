@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Draw a digit</title>
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; background: #111; color: #eee;
+         display: flex; flex-direction: column; align-items: center; padding: 24px; gap: 16px; }
+  h1 { margin: 0; font-weight: 500; }
+  #wrap { display: flex; gap: 24px; align-items: flex-start; }
+  #pad { background: #000; border: 1px solid #444; touch-action: none; cursor: crosshair; }
+  #preview { image-rendering: pixelated; border: 1px solid #444; background: #000; }
+  .col { display: flex; flex-direction: column; gap: 8px; align-items: center; }
+  button { background: #222; color: #eee; border: 1px solid #555; padding: 8px 14px;
+           font-size: 14px; cursor: pointer; border-radius: 4px; }
+  button:hover { background: #333; }
+  #digit { font-size: 96px; font-weight: 300; min-width: 80px; text-align: center; }
+  .row { display: flex; align-items: center; gap: 8px; font-size: 12px; font-family: ui-monospace, monospace; }
+  .bar { height: 10px; background: #4a9; }
+  .bars { display: flex; flex-direction: column; gap: 4px; }
+  .label { width: 14px; text-align: right; color: #888; }
+  .pct { width: 48px; color: #888; }
+</style>
+</head>
+<body>
+  <h1>draw a digit</h1>
+  <div id="wrap">
+    <div class="col">
+      <canvas id="pad" width="280" height="280"></canvas>
+      <div style="display:flex; gap:8px;">
+        <button id="clear">clear</button>
+        <button id="predict">predict</button>
+      </div>
+      <canvas id="preview" width="28" height="28" style="width:112px;height:112px;"></canvas>
+    </div>
+    <div class="col">
+      <div id="digit">–</div>
+      <div class="bars" id="bars"></div>
+    </div>
+  </div>
+  <script src="/app.js"></script>
+</body>
+</html>
