@@ -2,7 +2,9 @@ import math
 import numpy as np
 
 class Value:
-
+    '''
+    Holds a single piece of data (float) - used for initial minigrad operations, now using Tensor for more efficiency
+    '''
     def __init__(self, data, children=(), op='', label=''):
         self.data = data
         self._prev = set(children)

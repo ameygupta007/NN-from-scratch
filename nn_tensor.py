@@ -1,3 +1,5 @@
+import enum
+
 from minigrad import Tensor
 import numpy as np
 
@@ -19,17 +21,21 @@ class Layer:
         return [self.W, self.b]
     
 class MLP:
-    def __init__(self, nin, nouts):
+    def __init__(self, nin, nouts, dropout_p=0.0):
         # nin - number of inputs
         # nouts - list of number of neurons in each layer
         all_sizes = [nin] + nouts
         self.layers = [Layer(all_sizes[i], all_sizes[i+1]) for i in range(len(nouts))]
         self.layers[-1].activation = False
+        self.training = True
+        self.dropout_p = dropout_p
 
     def __call__(self, x):
         # call each layer one after the other
-        for layer in self.layers:
+        for i, layer in enumerate(self.layers):
             x = layer(x)
+            if i < len(self.layers) - 1 and self.dropout_p > 0:
+                x = dropout(x, self.dropout_p, training=self.training)
         return x
     
     def parameters(self):
@@ -38,4 +44,15 @@ class MLP:
         for l in self.layers:
             params.extend(l.parameters())
         return params
+    
+def dropout(x, p, training=True):
+    '''
+    x : Tensor
+    p : probability with which we drop a neuron in the layer
+    return: Tensor with dropout applied
+    '''
+    if not training or p == 0.0:
+        return x
+    mask = (np.random.rand(*x.data.shape) > p).astype(x.data.dtype) / (1.0 - p)
+    return x * mask
     
