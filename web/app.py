@@ -3,11 +3,10 @@ import os
 import numpy as np
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-MODEL_PATH = '93%.npz'
+STATIC_DIR = os.path.dirname(os.path.abspath(__file__))
+MODEL_PATH = os.path.join(STATIC_DIR, '..', 'models', 'few_epochs.npz')
 _data = np.load(MODEL_PATH)
 W1, b1, W2, b2 = _data['arr_0'], _data['arr_1'], _data['arr_2'], _data['arr_3']
-
-STATIC_DIR = os.path.dirname(os.path.abspath(__file__))
 STATIC_FILES = {
     '/': ('index.html', 'text/html; charset=utf-8'),
     '/app.js': ('app.js', 'application/javascript; charset=utf-8'),

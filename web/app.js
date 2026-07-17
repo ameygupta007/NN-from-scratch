@@ -27,9 +27,10 @@ function move(e) {
   ctx.lineTo(p.x, p.y);
   ctx.stroke();
   last = p;
+  schedulePredict();
   e.preventDefault();
 }
-function end() { drawing = false; last = null; }
+function end() { drawing = false; last = null; schedulePredict(); }
 
 pad.addEventListener('mousedown', start);
 pad.addEventListener('mousemove', move);
@@ -41,8 +42,7 @@ pad.addEventListener('touchend', end);
 document.getElementById('clear').onclick = () => {
   ctx.fillStyle = '#000'; ctx.fillRect(0, 0, pad.width, pad.height);
   pctx.fillStyle = '#000'; pctx.fillRect(0, 0, 28, 28);
-  digitEl.textContent = '–';
-  barsEl.innerHTML = '';
+  clearPrediction();
 };
 
 // MNIST-style preprocessing: crop to bbox, fit in 20x20, center in 28x28.
@@ -79,23 +79,54 @@ function preprocess() {
   return pixels;
 }
 
-document.getElementById('predict').onclick = async () => {
-  const pixels = preprocess();
-  if (!pixels) { digitEl.textContent = '–'; return; }
-  const res = await fetch('/predict', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ pixels })
-  });
-  const { digit, probs } = await res.json();
+const barEls = [], pctEls = [];
+for (let i = 0; i < 10; i++) {
+  const row = document.createElement('div');
+  row.className = 'row';
+  row.innerHTML = `<span class="label">${i}</span>` +
+                  `<div class="bar-wrap"><div class="bar" style="width:0px;"></div></div>` +
+                  `<span class="pct">0.0%</span>`;
+  barsEl.appendChild(row);
+  barEls.push(row.querySelector('.bar'));
+  pctEls.push(row.querySelector('.pct'));
+}
+
+function renderPrediction(digit, probs) {
   digitEl.textContent = digit;
-  barsEl.innerHTML = '';
   probs.forEach((p, i) => {
-    const row = document.createElement('div');
-    row.className = 'row';
-    row.innerHTML = `<span class="label">${i}</span>` +
-                    `<div class="bar" style="width:${Math.round(p * 160)}px;"></div>` +
-                    `<span class="pct">${(p * 100).toFixed(1)}%</span>`;
-    barsEl.appendChild(row);
+    barEls[i].style.width = `${Math.round(p * 160)}px`;
+    pctEls[i].textContent = `${(p * 100).toFixed(1)}%`;
   });
-};
+}
+
+function clearPrediction() {
+  digitEl.textContent = '–';
+  for (let i = 0; i < 10; i++) {
+    barEls[i].style.width = '0px';
+    pctEls[i].textContent = '0.0%';
+  }
+}
+
+let inFlight = false, dirty = false;
+async function schedulePredict() {
+  if (inFlight) { dirty = true; return; }
+  inFlight = true;
+  try {
+    do {
+      dirty = false;
+      const pixels = preprocess();
+      if (!pixels) { clearPrediction(); break; }
+      const res = await fetch('/predict', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pixels })
+      });
+      const { digit, probs } = await res.json();
+      renderPrediction(digit, probs);
+    } while (dirty);
+  } finally {
+    inFlight = false;
+  }
+}
+
+document.getElementById('predict').onclick = schedulePredict;
