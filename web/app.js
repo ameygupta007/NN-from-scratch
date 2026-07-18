@@ -7,7 +7,7 @@ const barsEl = document.getElementById('bars');
 
 ctx.fillStyle = '#000'; ctx.fillRect(0, 0, pad.width, pad.height);
 ctx.strokeStyle = '#fff';
-ctx.lineWidth = 22;
+ctx.lineWidth = 11;
 ctx.lineCap = 'round';
 ctx.lineJoin = 'round';
 
