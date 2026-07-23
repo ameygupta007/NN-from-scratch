@@ -3,6 +3,7 @@
 
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Draw a digit</title>
   <style>
     body {
@@ -12,8 +13,9 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 24px;
+      padding: 16px;
       gap: 16px;
+      margin: 0;
     }
 
     h1 {
@@ -25,6 +27,10 @@
       display: flex;
       gap: 24px;
       align-items: flex-start;
+      flex-wrap: wrap;
+      justify-content: center;
+      width: 100%;
+      max-width: 640px;
     }
 
     #pad {
@@ -32,12 +38,18 @@
       border: 1px solid #444;
       touch-action: none;
       cursor: crosshair;
+      width: min(280px, 80vw);
+      height: auto;
+      aspect-ratio: 1;
     }
 
     #preview {
       image-rendering: pixelated;
       border: 1px solid #444;
       background: #000;
+      width: min(112px, 32vw) !important;
+      height: auto !important;
+      aspect-ratio: 1;
     }
 
     .col {
@@ -62,10 +74,11 @@
     }
 
     #digit {
-      font-size: 96px;
+      font-size: clamp(64px, 18vw, 96px);
       font-weight: 300;
       min-width: 80px;
       text-align: center;
+      line-height: 1;
     }
 
     .row {
@@ -86,12 +99,13 @@
       display: flex;
       flex-direction: column;
       gap: 4px;
-      width: 240px;
+      width: min(240px, 80vw);
     }
 
     .bar-wrap {
-      width: 160px;
+      flex: 1;
       height: 10px;
+      background: #1a1a1a;
     }
 
     .label {
@@ -116,7 +130,7 @@
         <button id="clear">clear</button>
         <button id="predict">predict</button>
       </div>
-      <canvas id="preview" width="28" height="28" style="width:112px;height:112px;"></canvas>
+      <canvas id="preview" width="28" height="28"></canvas>
     </div>
     <div class="col">
       <div id="digit">–</div>

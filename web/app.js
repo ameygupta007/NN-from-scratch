@@ -16,7 +16,9 @@ let drawing = false, last = null;
 function pos(e) {
   const r = pad.getBoundingClientRect();
   const t = e.touches ? e.touches[0] : e;
-  return { x: t.clientX - r.left, y: t.clientY - r.top };
+  const sx = pad.width / r.width;
+  const sy = pad.height / r.height;
+  return { x: (t.clientX - r.left) * sx, y: (t.clientY - r.top) * sy };
 }
 function start(e) { drawing = true; last = pos(e); e.preventDefault(); }
 function move(e) {
@@ -94,7 +96,7 @@ for (let i = 0; i < 10; i++) {
 function renderPrediction(digit, probs) {
   digitEl.textContent = digit;
   probs.forEach((p, i) => {
-    barEls[i].style.width = `${Math.round(p * 160)}px`;
+    barEls[i].style.width = `${(p * 100).toFixed(2)}%`;
     pctEls[i].textContent = `${(p * 100).toFixed(1)}%`;
   });
 }
@@ -102,7 +104,7 @@ function renderPrediction(digit, probs) {
 function clearPrediction() {
   digitEl.textContent = '–';
   for (let i = 0; i < 10; i++) {
-    barEls[i].style.width = '0px';
+    barEls[i].style.width = '0%';
     pctEls[i].textContent = '0.0%';
   }
 }
