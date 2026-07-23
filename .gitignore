@@ -10,6 +10,7 @@ __pycache__/
 
 # Dataset
 mnist/
+mnist_augmented_pool.npz
 
 # Logs
 

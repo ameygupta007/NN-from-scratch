@@ -4,7 +4,7 @@ import numpy as np
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 STATIC_DIR = os.path.dirname(os.path.abspath(__file__))
-MODEL_PATH = os.path.join(STATIC_DIR, '..', 'models', 'dropout3.npz')
+MODEL_PATH = os.path.join(STATIC_DIR, '..', 'models', 'augmented.npz')
 _data = np.load(MODEL_PATH)
 W1, b1, W2, b2 = _data['arr_0'], _data['arr_1'], _data['arr_2'], _data['arr_3']
 STATIC_FILES = {
