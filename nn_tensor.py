@@ -39,7 +39,7 @@ class MLP:
         return x
     
     def parameters(self):
-        # return a list of all the Value objects representing paremeters in this MLP
+        # return a list of all the Tensor objects representing paremeters in this MLP
         params = []
         for l in self.layers:
             params.extend(l.parameters())
