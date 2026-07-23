@@ -84,8 +84,8 @@ for (let i = 0; i < 10; i++) {
   const row = document.createElement('div');
   row.className = 'row';
   row.innerHTML = `<span class="label">${i}</span>` +
-                  `<div class="bar-wrap"><div class="bar" style="width:0px;"></div></div>` +
-                  `<span class="pct">0.0%</span>`;
+    `<div class="bar-wrap"><div class="bar" style="width:0px;"></div></div>` +
+    `<span class="pct">0.0%</span>`;
   barsEl.appendChild(row);
   barEls.push(row.querySelector('.bar'));
   pctEls.push(row.querySelector('.pct'));
@@ -107,26 +107,72 @@ function clearPrediction() {
   }
 }
 
-let inFlight = false, dirty = false;
-async function schedulePredict() {
-  if (inFlight) { dirty = true; return; }
-  inFlight = true;
-  try {
-    do {
-      dirty = false;
-      const pixels = preprocess();
-      if (!pixels) { clearPrediction(); break; }
-      const res = await fetch('/predict', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pixels })
-      });
-      const { digit, probs } = await res.json();
-      renderPrediction(digit, probs);
-    } while (dirty);
-  } finally {
-    inFlight = false;
+// --inference--
+function matvec(x, W, rows, cols) {
+  // return xW where x is a row vector and W is a flattened matrix
+  // rows: number of rows in W, also number of cols in x
+  // cols: number of cols in W, and output
+  const out = new Float32Array(cols);
+  for (let j = 0; j < cols; j++) {
+    // out_j = sum(x_i ⋅ W_ij)
+    let s = 0;
+    for (let i = 0; i < rows; i++) s += x[i] * W[i * cols + j];
+    out[j] = s;
   }
+  return out
+}
+
+function predict(pixels, w) {
+  // hardcoded model structure
+  // hidden layer 1
+  const h = matvec(pixels, w.W1, 784, 100);
+  for (let j = 0; j < 100; j++) h[j] = Math.tanh(h[j] + w.b1[j]);
+  // output layer
+  const z = matvec(h, w.W2, 100, 10);
+  // softmax and bias
+  let m = -Infinity; // max, for shifting softmax
+  for (let j = 0; j < 10; j++) {
+    z[j] += w.b2[j];
+    if (z[j] > m) m = z[j];
+  }
+  const e = new Float64Array(10);
+  let sum_e = 0;
+  for (let j = 0; j < 10; j++) {
+    e[j] = Math.exp(z[j] - m);
+    sum_e += e[j];
+  }
+  let digit = 0;
+  const probs = new Array(10);
+  for (let j = 0; j < 10; j++) {
+    probs[j] = e[j] / sum_e;
+    if (probs[j] > probs[digit]) digit = j;
+  }
+  return { digit, probs };
+}
+
+const weightsReady = fetch('/weights.bin')
+  .then(r => r.arrayBuffer())
+  .then(buf => {
+    const f = new Float32Array(buf);
+    let o = 0;
+    const W1 = f.subarray(o, o += 784 * 100);
+    const b1 = f.subarray(o, o += 100);
+    const W2 = f.subarray(o, o += 100 * 10);
+    const b2 = f.subarray(o, o += 10);
+    return { W1, b1, W2, b2 };
+  });
+
+// -- scheduling --
+
+let pending = false, weights = null;
+weightsReady.then(w => { weights = w; });
+
+async function schedulePredict() {
+  if (!weights) { pending = true; await weightsReady; pending = false; }
+  const pixels = preprocess();
+  if (!pixels) { clearPrediction(); return; }
+  const { digit, probs } = predict(pixels, weights);
+  renderPrediction(digit, probs);
 }
 
 document.getElementById('predict').onclick = schedulePredict;
