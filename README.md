@@ -2,7 +2,7 @@
 
 A small neural network library built from scratch using NumPy (no PyTorch/TensorFlow), trained to **97.5% accuracy on MNIST**. 
 
-Includes an autograd engine (`minigrad.py`) with gradients that numerically match Pytorch on tests.
+Includes an autograd engine (`minigrad.py`) with gradients that numerically match PyTorch on autograd tests.
 
 Demo hosted at https://whatdigit.vercel.app, where you can draw a digit and see the model's predictions.
 
@@ -35,7 +35,7 @@ Iterating on the MNIST classifier:
 | Change                          | Test accuracy |
 | ------------------------------- | ------------- |
 | Baseline MLP                    | ~93%          |
-| + softmax cross-entropy loss    | ~94%        |
+| + softmax cross-entropy loss    | ~94%          |
 | + higher learning rate + decay  | ~97%          |
 | + dropout + data augmentation   | **97.5%**     |
 

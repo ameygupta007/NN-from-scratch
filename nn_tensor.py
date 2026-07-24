@@ -1,5 +1,3 @@
-import enum
-
 from minigrad import Tensor
 import numpy as np
 
