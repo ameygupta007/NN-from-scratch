@@ -1,6 +1,5 @@
 import numpy as np
 
-
 def _bilinear_sample(img, src_y, src_x):
     # img: 2D numpy array, e.g. 28x28
     # src_y, src_x: 2D numpy arrays - for every output pixel, fractional source coordinates 
@@ -34,14 +33,12 @@ def _bilinear_sample(img, src_y, src_x):
     # if out of range fill in black (background)
     return np.where(valid, top * (1 - ty) + bot * ty, 0.0)
 
-
 def random_shift(img, max_pixels=2):
     dy = np.random.uniform(-max_pixels, max_pixels)
     dx = np.random.uniform(-max_pixels, max_pixels)
     h, w = img.shape
     yy, xx = np.meshgrid(np.arange(h), np.arange(w), indexing='ij')
     return _bilinear_sample(img, yy - dy, xx - dx)
-
 
 def random_rotate(img, max_degrees=10):
     theta = np.deg2rad(np.random.uniform(-max_degrees, max_degrees))
@@ -57,7 +54,6 @@ def random_rotate(img, max_degrees=10):
 
     return _bilinear_sample(img, src_y, src_x)
 
-
 def random_scale(img, min_factor=0.9, max_factor=1.1):
     factor = np.random.uniform(min_factor, max_factor)
     h, w = img.shape
@@ -70,13 +66,11 @@ def random_scale(img, min_factor=0.9, max_factor=1.1):
     src_x = xx / factor + cx
     return _bilinear_sample(img, src_y, src_x)
 
-
 def augment_image(img, shift_px=2, rotate_deg=10, scale_range=(0.9, 1.1)):
     img = random_shift(img, max_pixels=shift_px)
     img = random_rotate(img, max_degrees=rotate_deg)
     img = random_scale(img, min_factor=scale_range[0], max_factor=scale_range[1])
     return np.clip(img, 0.0, 1.0)
-
 
 def augment_batch(xb, img_shape=(28, 28), shift_px=2, rotate_deg=10, scale_range=(0.9, 1.1)):
     # xb: np array of flat images
