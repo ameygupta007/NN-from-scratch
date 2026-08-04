@@ -1,7 +1,7 @@
 import numpy as np
 
 class Tensor:
-    # Value but for wrapping a numpy array, and supporting matrix/tensor operations
+
 
     def __init__(self, data, children=(), op='', label=''):
         self.data = np.asarray(data, dtype=np.float64)
