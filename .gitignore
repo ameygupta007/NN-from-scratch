@@ -9,8 +9,13 @@
 __pycache__/
 
 # Dataset
-mnist/
+data/
 mnist_augmented_pool.npz
 
 # Logs
 
+# claude logs
+.claude/
+
+# metadata
+*.egg-info
