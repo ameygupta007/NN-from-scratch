@@ -11,22 +11,20 @@ Demo hosted at https://whatdigit.vercel.app, where you can draw a digit and see 
 
 ## Files
 
-- **Autograd engine** (`minigrad.py`) — reverse-mode autodiff with a scalar `Value` type and a vectorised `Tensor` type supporting broadcasting, matmul, and other operations including softmax and cross-entropy.
-- **MLP module** (`nn_tensor.py`) — `Layer` / `MLP` abstractions built on `Tensor`.
-- **Data augmentation** (`augment.py`) — random shift, rotate, and scale implemented from scratch with bilinear sampling.
+- **Autograd engine** (`minigrad/engine.py`) — reverse-mode autodiff on a `Tensor` type with broadcasting, matmul, and higher-level ops including softmax and cross-entropy.
+- **MLP module** (`minigrad/nn.py`) — `Layer` / `MLP` abstractions built on `Tensor`.
+- **MNIST example** (`examples/mnist/`) — data loader (`data.py`), augmentation (`augment.py`), training loop (`train.py`), and the driver notebook (`train_mnist.ipynb`) that ties them together end-to-end.
 - **Browser demo** (`web/`) — trained weights exported to a binary blob and run client-side in JS.
 - **Tests** (`tests/test_minigrad.py`) — gradients checked against PyTorch.
-- **Training notebook** (`notebooks/train_mnist.ipynb`) — end-to-end pipeline: loads MNIST from the raw IDX files, preprocesses (flatten + one-hot), builds an augmented training pool, runs the training loop with step-wise learning rate decay, and evaluates on the test set.
-- **Computation graph viz** (`notebooks/compute_graph_viz.ipynb`) — renders the autograd DAG with per-node values and gradients using GraphViz (see below).
-- `models/mnist_mlp_97_5.npz` — trained weights for the best model so far (**97.5% test accuracy**). Load with `np.load`.
+- `examples/mnist/models/mnist_mlp_97_5.npz` — trained weights for the best model so far (**97.5% test accuracy**). Load with `np.load`.
 
 ## How the autograd works
 
-Every operation on a `Value` (or `Tensor`) builds a node in a computation graph, recording its inputs and a local backward function. Calling `.backward()` on the output does a topological sort of the graph and walks it in reverse, applying the chain rule at each node.
-
-`notebooks/compute_graph_viz.ipynb` renders these graphs for the `Value` class with GraphViz — each node shows its label, current data, and current gradient, with edges annotated by the operation that produced them:
+Every operation on a `Tensor` builds a node in a computation graph, recording its inputs and a local backward function. Calling `.backward()` on the output does a topological sort of the graph and walks it in reverse, applying the chain rule at each node.
 
 ![Computation graph visualisation](assets/node_viz.png)
+
+*(Rendered from an earlier scalar prototype of the engine; the graph today has the same shape but with `Tensor` objects.)*
 
 ## Results
 
@@ -45,14 +43,14 @@ Final model is a 784 -> 100 -> 10 MLP, with tanh activations, dropout_p = 0.2.
 
 Train:
 
-Requires the MNIST dataset in `mnist/` at the repo root, in the original IDX format from e.g. [Kaggle mirror](https://www.kaggle.com/datasets/hojjatk/mnist-dataset):
+Requires the MNIST dataset in `examples/mnist/data/`, in the original IDX format from e.g. [Kaggle mirror](https://www.kaggle.com/datasets/hojjatk/mnist-dataset):
 
 ```
-mnist/
-├── train-images-idx3-ubyte/train-images-idx3-ubyte
-├── train-labels-idx1-ubyte/train-labels-idx1-ubyte
-├── t10k-images-idx3-ubyte/t10k-images-idx3-ubyte
-└── t10k-labels-idx1-ubyte/t10k-labels-idx1-ubyte
+examples/mnist/data/
+├── train-images.idx3-ubyte
+├── train-labels.idx1-ubyte
+├── t10k-images.idx3-ubyte
+└── t10k-labels.idx1-ubyte
 ```
 
 Then:
@@ -60,7 +58,8 @@ Then:
 ```bash
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-jupyter notebook notebooks/train_mnist.ipynb
+pip install -e .   # makes `minigrad` importable from the notebook and scripts
+jupyter notebook examples/mnist/train_mnist.ipynb
 ```
 
 (For running the tests, use `requirements-dev.txt` instead — adds `torch` and `pytest`.)
