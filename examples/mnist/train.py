@@ -3,17 +3,20 @@ import time
 
 import numpy as np
 
+def predict(model, x):
+    was_training = model.training
+    model.training = False 
+    try:
+        Z = model(x)
+        return np.argmax(Z.data, axis=1)
+    finally:
+        model.training = was_training
+
 def evaluate(model, x, y):
     # give accuracy of model on data x with expected output y
     # y: np array of outputs we want
-    was_training = model.training
-    model.training = False
-    try:
-        Z = model(x)
-        p = np.argmax(Z.data, axis=1)
-        return float(np.sum(np.equal(p, y)) / len(y))
-    finally:
-        model.training = was_training
+    preds = predict(model, x)
+    return float(np.sum(np.equal(preds, y)) / len(y))
 
 def train(
     model, x_pool, y_pool,

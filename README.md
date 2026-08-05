@@ -35,7 +35,7 @@ Iterating on the MNIST classifier:
 | Baseline MLP                    | ~93%          |
 | + softmax cross-entropy loss    | ~94%          |
 | + higher learning rate + decay  | ~97%          |
-| + dropout + data augmentation   | **97.5%**     |
+| + dropout + data augmentation   | **>97.5%**     |
 
 Final model is a 784 -> 100 -> 10 MLP, with tanh activations, dropout_p = 0.2.
 
