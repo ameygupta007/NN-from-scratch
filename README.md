@@ -85,3 +85,10 @@ cd web && python -m http.server 8000
 ## Resources
 
 Started from Andrej Karpathy's [micrograd walkthrough](https://www.youtube.com/watch?v=VMj-3S1tku0), then extended to tensors, an MLP training loop, augmentation, and the browser demo.
+
+- [MiniTorch](https://minitorch.github.io) - structure of an ML library
+- [Attention Is All You Need](https://arxiv.org/pdf/1706.03762) - transformer architecture
+- 3Blue1Brown, for gaining intuition
+  - [Transformers, the tech behind LLMs](https://www.youtube.com/watch?v=wjZofJX0v4M&t=2s)
+  - [Attention in transformers, step-by-step](https://www.youtube.com/watch?v=eMlx5fFNoYc)
+- Peter Bloem, [Transformers from scratch](https://peterbloem.nl/blog/transformers) - talks about transformers and attention

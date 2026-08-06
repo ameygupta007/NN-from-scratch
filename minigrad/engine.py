@@ -2,6 +2,9 @@ import numpy as np
 
 class Tensor:
 
+    """
+    Wraps data to enable operations on Tensor and enable backpropagation
+    """
 
     def __init__(self, data, children=(), op='', label=''):
         self.data = np.asarray(data, dtype=np.float64)
