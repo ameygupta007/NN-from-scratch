@@ -154,6 +154,15 @@ class Tensor:
         out._backward = _backward
         return out
 
+    def reshape(self, shape):
+        raise NotImplementedError
+
+    def transpose(self, *args, **kwargs):
+        raise NotImplementedError
+
+    def softmax(self, axis=-1):
+        raise NotImplementedError
+
     def backward(self):
         self.grad = np.ones_like(self.data)
 
@@ -169,6 +178,13 @@ class Tensor:
         topo_sort(self)
         for n in reversed(topo):
             n._backward()
+
+def concat(ts, axis=0):
+    raise NotImplementedError
+
+def embedding(indices, e):
+    # lookup embeddings in e by indices
+    raise NotImplementedError
 
 def _unbroadcast(grad, shape):
     # handle grads flowing backwards to Tensors that were broadcast in the initial operation

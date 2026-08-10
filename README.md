@@ -1,8 +1,8 @@
 # NN-from-scratch
 
-A small neural network library built from scratch using NumPy (no PyTorch/TensorFlow), trained to **97.5% accuracy on MNIST**. 
+A small neural network library built from scratch using NumPy (no PyTorch/TensorFlow), used to train to **97.5+% accuracy on MNIST**. 
 
-Includes an autograd engine (`minigrad.py`) with gradients that numerically match PyTorch on autograd tests.
+Includes an autograd engine (`minigrad/engine.py`) with gradients that numerically match PyTorch on autograd tests.
 
 Demo hosted at https://whatdigit.vercel.app, where you can draw a digit and see the model's predictions.
 
@@ -12,10 +12,11 @@ Demo hosted at https://whatdigit.vercel.app, where you can draw a digit and see 
 ## Files
 
 - **Autograd engine** (`minigrad/engine.py`) — reverse-mode autodiff on a `Tensor` type with broadcasting, matmul, and higher-level ops including softmax and cross-entropy.
-- **MLP module** (`minigrad/nn.py`) — `Layer` / `MLP` abstractions built on `Tensor`.
-- **MNIST example** (`examples/mnist/`) — data loader (`data.py`), augmentation (`augment.py`), training loop (`train.py`), and the driver notebook (`train_mnist.ipynb`) that ties them together end-to-end.
-- **Browser demo** (`web/`) — trained weights exported to a binary blob and run client-side in JS.
-- **Tests** (`tests/test_minigrad.py`) — gradients checked against PyTorch.
+- **MLP module** (`minigrad/nn.py`) — `Module`, `Linear` and `MLP` abstractions built on `Tensor` with parameter tracking.
+- **Optimizers** (`minigrad/optim.py`) - `SGD` optimizer (more to come), LR scheduling functions e.g. `step_decay`
+- **MNIST example** (`examples/mnist/`) — data loader (`data.py`), augmentation (`augment.py`), training loop (`train.py`), and the notebook (`train_mnist.ipynb`) that ties them together end-to-end.
+- **Browser demo** (`web/`) — trained weights exported to a binary blob and run client-side in JS to classify digits.
+- **Tests** (`tests/`) — gradients checked against PyTorch, and other modules also checked.
 - `examples/mnist/models/mnist_mlp_97_5.npz` — trained weights for the best model so far (**97.5% test accuracy**). Load with `np.load`.
 
 ## How the autograd works
@@ -70,7 +71,11 @@ cd web && python -m http.server 8000
 # open http://localhost:8000
 ```
 
+## What a transformer needed that MNIST didn't
+All that was needed for MNIST was a functioning autograd and MLP with a training loop. This could be done in a Jupyter notebook, without much abstraction into Optimizer and Module classes. For the transformer I decided to refactor first and add these abstractions to make my life easier, making sure the MNIST training still ran unchanged (apart from extracting the training loop).
+
 ## Next steps (ideas)
+**Currently working on implementing a transformer.**
 
 - Try a CNN and compare to the 97.5%
 - Optimise training: currently plain SGD with step decay, could add momentum, Nesterov, or Adam.
@@ -78,7 +83,6 @@ cd web && python -m http.server 8000
 - Train on **Fashion MNIST**
 - Better autograd: support more ops, broadcasting edge cases, `no_grad` context.
 - Training ergonomics: extract training loop into `train.py` with better CLI flags and info
-- Generalisation: a proper `Module` base class, an `Optimizer` interface, a `DataLoader`-style batching abstraction.
 - Confusion matrix and per-class accuracy
 - Multiple digits?
 

@@ -1,0 +1,3 @@
+# notes from implementation
+
+- 

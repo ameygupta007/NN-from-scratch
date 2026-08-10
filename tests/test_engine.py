@@ -1,8 +1,8 @@
 import numpy as np
 import pytest
 import torch
-from minigrad import Tensor
-
+from minigrad import Tensor, concat, embedding
+from minigrad.engine import _unbroadcast
 
 # --- Tensor: forward / backward basics ---
 
@@ -386,3 +386,122 @@ def test_softmax_cross_entropy_forward_backward_vs_torch():
     assert loss.data.shape == ()
     assert np.isclose(loss.data, loss_t.detach().numpy())
     assert np.allclose(z.grad, zt.grad.numpy())  # type: ignore
+
+# --- Tensor: new ops ---
+
+@pytest.mark.parametrize("shape", [(16, 1), (4, 2, 2), (2, 2, 4)])
+def test_tensor_reshape(shape):
+    arr = np.random.randn(4, 4)
+
+    t = Tensor(arr)
+    w = Tensor(np.random.randn(*shape))
+    loss = (t.reshape(shape) * w).sum()
+    loss.backward()
+
+    tt = torch.tensor(arr, requires_grad=True)
+    wt = torch.tensor(w.data)
+    loss_t = (tt.reshape(shape) * wt).sum()
+    loss_t.backward()
+
+    assert np.allclose(t.grad, tt.grad.numpy(), atol=1e-5) # type:ignore
+
+@pytest.mark.parametrize("dim1, dim2", [(0,1), (0,0), (0,2)])
+def test_tensor_transpose(dim1, dim2):
+    arr = np.random.randn(2, 3, 4)
+
+    t = Tensor(arr)
+    t1 = t.transpose(dim1, dim2)
+    w = Tensor(np.random.randn(*t1.data.shape))
+    loss = (t1 * w).sum()
+    loss.backward()
+
+    tt = torch.tensor(arr, requires_grad=True)
+    tt1 = tt.transpose(dim1, dim2)
+    wt = torch.tensor(w.data)
+    loss_t = (tt1 * wt).sum()
+    loss_t.backward()
+
+    assert np.allclose(t1.data, tt1.data.numpy(), atol=1e-5)
+    assert np.allclose(t.grad, tt.grad.numpy(), atol=1e-5) # type:ignore 
+
+def test_concat_grad():
+    a = np.random.randn(3, 1, 5)
+    b = np.random.randn(3, 4, 5)
+    c = np.random.randn(3, 3, 5)
+
+    ta, tb, tc = Tensor(a), Tensor(b), Tensor(c)
+    conc = concat((ta, tb, tc), axis=1)
+    w = Tensor(np.random.randn(3,8,5))
+    loss = (conc * w).sum()
+    loss.backward()
+
+    tta = torch.tensor(a, requires_grad=True)
+    ttb = torch.tensor(b, requires_grad=True)
+    ttc = torch.tensor(c, requires_grad=True)
+    conc_t = torch.concat((tta, ttb, ttc), dim=1)
+    wt = torch.tensor(w.data)
+    loss_t = (conc_t * wt).sum()
+    loss_t.backward()
+
+    assert np.allclose(conc.data, ttc.data.numpy(), atol=1e-5)
+    assert np.allclose(ta.grad, tta.grad.numpy(), atol=1e-5) # type:ignore 
+    assert np.allclose(tb.grad, ttb.grad.numpy(), atol=1e-5) # type:ignore 
+    assert np.allclose(tc.grad, ttc.grad.numpy(), atol=1e-5) # type:ignore 
+    
+
+def test_embedding_grad():
+    V, D = 10, 4
+    B, T = 3, 7
+
+    W = np.random.randn(V, D)
+    ids = np.random.randint(0, V, size=(B, T))
+    upstream = np.random.randn(B, T, D)
+
+    tw = Tensor(W)
+    loss = (embedding(ids, tw) * Tensor(upstream)).sum()
+    loss.backward()
+
+    wt = torch.tensor(W, requires_grad=True)
+    out_t = torch.nn.functional.embedding(torch.tensor(ids), wt)
+    loss_t = (out_t * torch.tensor(upstream)).sum()
+    loss_t.backward()
+
+    assert np.allclose(tw.grad, wt.grad.numpy(), atol=1e-5) # type:ignore
+
+@pytest.mark.parametrize("axis", [0,1,-1])
+def test_tensor_softmax(axis):
+    arr = np.random.randn(5,6,7)
+
+    t = Tensor(arr)
+    sm = t.softmax(axis=axis)
+    sm.backward()
+
+    tt = torch.tensor(arr)
+    sm_t = torch.softmax(tt, dim=axis)
+    sm_t.backward()
+
+    assert np.allclose(sm.data, sm_t.data.numpy(), atol=1e-5)
+    assert np.allclose(t.grad, tt.grad.numpy(), atol=1e-5) # type: ignore
+
+
+@pytest.mark.parametrize("small_shape, big_shape", [
+    ((3,),        (2, 3)),
+    ((1, 3),      (2, 3)),
+    ((2, 1, 3),   (2, 4, 3)),
+    ((1, 1, 5, 5),(2, 3, 5, 5)),
+    ((),          (2, 3, 5, 5)),
+    ((4,),        (2, 3, 4)),
+])
+def test_broadcast_add_grad(small_shape, big_shape):
+    a = np.random.randn(*small_shape)
+    b = np.random.randn(*big_shape)
+
+    ta, tb = Tensor(a), Tensor(b)
+    (ta + tb).sum().backward()
+
+    at = torch.tensor(a, requires_grad=True)
+    bt = torch.tensor(b, requires_grad=True)
+    (at + bt).sum().backward()
+
+    assert np.allclose(ta.grad, at.grad.numpy(), atol=1e-5) # type: ignore
+    assert np.allclose(tb.grad, bt.grad.numpy(), atol=1e-5) # type: ignore
