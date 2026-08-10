@@ -99,6 +99,9 @@ class Tensor:
         out._backward = _backward
 
         return out
+
+    def sqrt(self):
+        return self ** 0.5
     
     def __iter__(self):
         return iter(self.data)
@@ -138,6 +141,18 @@ class Tensor:
         out._backward = _backward
         return out
 
+    def mean(self, axis=None, keepdims=False):
+        N = self.data.size if axis is None else self.data.shape[axis]
+        s = self.data.sum(axis=axis, keepdims=keepdims)
+        out = Tensor(s / N, (self, ), 'mean')
+        def _backward():
+            grad = out.grad
+            if axis is not None and not keepdims:
+                grad = np.expand_dims(grad, axis)
+            self.grad += np.ones_like(self.data) * grad / N
+        out._backward = _backward
+        return out
+    
     def softmax_cross_entropy(self, y):
         assert isinstance(y, np.ndarray)
         z = self.data
@@ -155,13 +170,29 @@ class Tensor:
         return out
 
     def reshape(self, shape):
-        raise NotImplementedError
-
-    def transpose(self, *args, **kwargs):
-        raise NotImplementedError
+        out = Tensor(self.data.reshape(shape), (self, ), 'reshape')
+        def _backward():
+            self.grad += out.grad.reshape(self.data.shape)
+        out._backward = _backward
+        return out
+    
+    def transpose(self, axis1, axis2):
+        out = Tensor(self.data.swapaxes(axis1, axis2), (self, ), 'transpose')
+        def _backward():
+            self.grad += out.grad.swapaxes(axis1, axis2)
+        out._backward = _backward
+        return out
 
     def softmax(self, axis=-1):
-        raise NotImplementedError
+        z = self.data
+        z_shift = z - z.max(axis, keepdims=True)
+        exps = np.exp(z_shift)
+        sm = exps / exps.sum(axis, keepdims=True)
+        out = Tensor(sm, (self,), 'softmax')
+        def _backward():
+            self.grad += out.data * (out.grad - np.sum(out.grad * out.data, axis, keepdims=True))
+        out._backward = _backward
+        return out
 
     def backward(self):
         self.grad = np.ones_like(self.data)
@@ -180,11 +211,23 @@ class Tensor:
             n._backward()
 
 def concat(ts, axis=0):
-    raise NotImplementedError
+    ts = tuple(ts)
+    out = Tensor(np.concatenate([t.data for t in ts], axis=axis), ts, 'concat')
+    
+    splits = np.cumsum([t.data.shape[axis] for t in ts])[:-1]
+    def _backward():
+        for t, g in zip(ts, np.split(out.grad, splits, axis=axis)):
+            t.grad += g
+    out._backward = _backward
+    return out
 
 def embedding(indices, e):
     # lookup embeddings in e by indices
-    raise NotImplementedError
+    out = Tensor(e.data[indices], (e,), 'embedding')
+    def _backward():
+        np.add.at(e.grad, indices, out.grad)
+    out._backward = _backward
+    return out
 
 def _unbroadcast(grad, shape):
     # handle grads flowing backwards to Tensors that were broadcast in the initial operation

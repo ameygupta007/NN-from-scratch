@@ -443,10 +443,10 @@ def test_concat_grad():
     loss_t = (conc_t * wt).sum()
     loss_t.backward()
 
-    assert np.allclose(conc.data, ttc.data.numpy(), atol=1e-5)
-    assert np.allclose(ta.grad, tta.grad.numpy(), atol=1e-5) # type:ignore 
-    assert np.allclose(tb.grad, ttb.grad.numpy(), atol=1e-5) # type:ignore 
-    assert np.allclose(tc.grad, ttc.grad.numpy(), atol=1e-5) # type:ignore 
+    assert np.allclose(conc.data, conc_t.data.numpy(), atol=1e-5)
+    assert np.allclose(ta.grad, tta.grad.numpy(), atol=1e-5) # type: ignore 
+    assert np.allclose(tb.grad, ttb.grad.numpy(), atol=1e-5) # type: ignore 
+    assert np.allclose(tc.grad, ttc.grad.numpy(), atol=1e-5) # type: ignore 
     
 
 def test_embedding_grad():
@@ -476,9 +476,9 @@ def test_tensor_softmax(axis):
     sm = t.softmax(axis=axis)
     sm.backward()
 
-    tt = torch.tensor(arr)
+    tt = torch.tensor(arr, requires_grad=True)
     sm_t = torch.softmax(tt, dim=axis)
-    sm_t.backward()
+    sm_t.backward(torch.ones_like(sm_t.data))
 
     assert np.allclose(sm.data, sm_t.data.numpy(), atol=1e-5)
     assert np.allclose(t.grad, tt.grad.numpy(), atol=1e-5) # type: ignore
