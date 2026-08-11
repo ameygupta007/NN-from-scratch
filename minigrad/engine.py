@@ -1,4 +1,5 @@
 import numpy as np
+from collections import deque
 
 class Tensor:
 
@@ -197,20 +198,31 @@ class Tensor:
     def backward(self):
         self.grad = np.ones_like(self.data)
 
+        # topo sort - iterative
         topo = []
         visited = set()
-        def topo_sort(v):
-            if v not in visited:
-                visited.add(v)
-                for child in v._prev:
-                    topo_sort(child)
-                topo.append(v)
+        stack = deque()
+        stack.append((self, False))
 
-        topo_sort(self)
+        while stack:
+            v, expanded = stack[-1]
+            if expanded:
+                stack.pop()
+                topo.append(v)
+            elif v in visited:
+                stack.pop()
+            else:
+                visited.add(v)
+                stack[-1] = (v, True)
+                for child in v._prev:
+                    if child not in visited:
+                        stack.append((child, False))
+
         for n in reversed(topo):
             n._backward()
 
 def concat(ts, axis=0):
+    # concatenate Tensors ts along axis, return new Tensor
     ts = tuple(ts)
     out = Tensor(np.concatenate([t.data for t in ts], axis=axis), ts, 'concat')
     

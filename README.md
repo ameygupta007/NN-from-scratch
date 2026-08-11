@@ -74,6 +74,12 @@ cd web && python -m http.server 8000
 ## What a transformer needed that MNIST didn't
 All that was needed for MNIST was a functioning autograd and MLP with a training loop. This could be done in a Jupyter notebook, without much abstraction into Optimizer and Module classes. For the transformer I decided to refactor first and add these abstractions to make my life easier, making sure the MNIST training still ran unchanged (apart from extracting the training loop).
 
+Additionally:
+- new operations: layer_norm, reshape, concat, softmax, embedding
+- needed to change backprop algorithm to be iterative rather than recursive, to avoid hitting the recursion limit.
+
+
+
 ## Next steps (ideas)
 **Currently working on implementing a transformer.**
 
