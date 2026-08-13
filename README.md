@@ -109,5 +109,9 @@ Started from Andrej Karpathy's [micrograd walkthrough](https://www.youtube.com/w
 - Peter Bloem, [Transformers from scratch](https://peterbloem.nl/blog/transformers) - talks about transformers and attention
 
 Optimizers:
-- [Sutskever et al., "On the importance of initialization and momentum in deep learning"](https://proceedings.mlr.press/v28/sutskever13.html)
-- [Understanding SGD with momentum - Piiyush Kashyap](https://medium.com/@piyushkashyap045/understanding-sgd-with-momentum-in-deep-learning-a-beginner-friendly-guide-0252ede605b4)
+- Momentum:
+  - [Sutskever et al., "On the importance of initialization and momentum in deep learning"](https://proceedings.mlr.press/v28/sutskever13.html)
+  - [Understanding SGD with momentum - Piiyush Kashyap](https://medium.com/@piyushkashyap045/understanding-sgd-with-momentum-in-deep-learning-a-beginner-friendly-guide-0252ede605b4)
+- Adam:
+  - [Kingma & Ba, "Adam: A Method for Stochastic Optimization"](https://arxiv.org/abs/1412.6980)
+  - 

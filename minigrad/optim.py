@@ -17,7 +17,7 @@ class Optimizer:
 
 class SGD(Optimizer):
     '''
-    Stochastic Gradient Descent: step is learning rate * grad
+    Stochastic Gradient Descent: step is learning rate * grad (when momentum = 0)
     '''
     def __init__(self, params, lr=1.0, momentum=0.0):
         super().__init__(params)
@@ -31,6 +31,31 @@ class SGD(Optimizer):
             p_id = id(p)
             self.buffer[p_id] = self.m * self.buffer.get(p_id, 0) + p.grad # unaffected if momentum=0
             p.data -= self.buffer[p_id] * lr
+
+class Adam(Optimizer):
+    def __init__(self, params, lr=0.001, b1=0.9, b2=0.999, eps=1e-8):
+        super().__init__(params)
+        self.lr = lr
+        self.b1, self.b2 = b1, b2
+        self.eps = eps
+
+        # initialize moment vectors
+        self.m = {id(p):np.zeros_like(p.data) for p in self.params}
+        self.v = {id(p):np.zeros_like(p.data) for p in self.params}
+        self.t = 0 # timestep
+
+    def step(self):
+        self.t += 1
+        lr_t = self.lr * np.sqrt(1 - self.b2 ** self.t) / (1 - self.b1 ** self.t)
+        for p in self.params:
+            pid = id(p)
+            m, v = self.m[pid], self.v[pid]
+            m *= self.b1
+            m += (1 - self.b1) * p.grad
+            v *= self.b2
+            v += (1 - self.b2) * (p.grad * p.grad)
+
+            p.data -= lr_t * m / (np.sqrt(v) + self.eps)
 
 
 ### LR SCHEDULERS: each returns a function from t to LR
