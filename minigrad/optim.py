@@ -28,8 +28,9 @@ class SGD(Optimizer):
     def step(self):
         lr = self.lr
         for p in self.params:
-            self.buffer[p] = self.m * self.buffer.get(p, 0) + p.grad # unaffected if momentum=0
-            p.data -= self.buffer[p] * self.lr
+            p_id = id(p)
+            self.buffer[p_id] = self.m * self.buffer.get(p_id, 0) + p.grad # unaffected if momentum=0
+            p.data -= self.buffer[p_id] * lr
 
 
 ### LR SCHEDULERS: each returns a function from t to LR

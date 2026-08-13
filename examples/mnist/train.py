@@ -36,8 +36,8 @@ def train(
     params = model.parameters()
     loss_vals = []
 
-    opt = SGD(params, lr=1.0, momentum=momentum)
     sched = step_decay(num_epochs, lr*(1-momentum), lr_decay_at, lr_decay_factor)
+    opt = SGD(params, lr=sched(1), momentum=momentum)
 
     model.train()
 
