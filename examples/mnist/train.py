@@ -25,6 +25,7 @@ def train(
     x_test=None, y_test=None,
     num_epochs=5000, batch_size=128, steps_per_epoch=None,
     lr=1.0, lr_decay_at=(0.5, 0.75), lr_decay_factor=0.1,
+    momentum=0.0,
     log_every=100, gc_every=20,
 ):
     # training loop: train model on x_pool, y_pool
@@ -35,8 +36,8 @@ def train(
     params = model.parameters()
     loss_vals = []
 
-    opt = SGD(params, lr=1.0)
-    sched = step_decay(num_epochs, lr, lr_decay_at, lr_decay_factor)
+    opt = SGD(params, lr=1.0, momentum=momentum)
+    sched = step_decay(num_epochs, lr*(1-momentum), lr_decay_at, lr_decay_factor)
 
     model.train()
 

@@ -1,6 +1,6 @@
 # NN-from-scratch
 
-A small neural network library built from scratch using NumPy (no PyTorch/TensorFlow), used to train to **97.5+% accuracy on MNIST**. 
+A small neural network library built from scratch using NumPy (no PyTorch/TensorFlow), used to train to **98+% accuracy on MNIST**. 
 
 Includes an autograd engine (`minigrad/engine.py`) with gradients that numerically match PyTorch on autograd tests.
 
@@ -17,7 +17,7 @@ Demo hosted at https://whatdigit.vercel.app, where you can draw a digit and see 
 - **MNIST example** (`examples/mnist/`) — data loader (`data.py`), augmentation (`augment.py`), training loop (`train.py`), and the notebook (`train_mnist.ipynb`) that ties them together end-to-end.
 - **Browser demo** (`web/`) — trained weights exported to a binary blob and run client-side in JS to classify digits.
 - **Tests** (`tests/`) — gradients checked against PyTorch, and other modules also checked.
-- `examples/mnist/models/mnist_mlp_97_5.npz` — trained weights for the best model so far (**97.5% test accuracy**). Load with `np.load`.
+- `examples/mnist/models/momentum-98%.npz` — trained weights for the best model so far (**98% test accuracy**). Load with `np.load`.
 
 ## How the autograd works
 
@@ -36,7 +36,8 @@ Iterating on the MNIST classifier:
 | Baseline MLP                    | ~93%          |
 | + softmax cross-entropy loss    | ~94%          |
 | + higher learning rate + decay  | ~97%          |
-| + dropout + data augmentation   | **>97.5%**     |
+| + dropout + data augmentation   | >97.5%        |
+| + momentum in SGD               | **98%**       |
 
 Final model is a 784 -> 100 -> 10 MLP, with tanh activations, dropout_p = 0.2.
 
@@ -83,14 +84,18 @@ Additionally:
 ## Next steps (ideas)
 **Currently working on implementing a transformer.**
 
-- Try a CNN and compare to the 97.5%
-- Optimise training: currently plain SGD with step decay, could add momentum, Nesterov, or Adam.
-- L2 weight decay, early stopping, label smoothing
-- Train on **Fashion MNIST**
-- Better autograd: support more ops, broadcasting edge cases, `no_grad` context.
-- Training ergonomics: extract training loop into `train.py` with better CLI flags and info
-- Confusion matrix and per-class accuracy
-- Multiple digits?
+- General:
+  - Optimise training: implement different optimisers
+    - could try Exponential Moving Average for SGD instead of LR scheduling
+  - Better autograd: support more ops, broadcasting edge cases, `no_grad` context.
+- MNIST:
+  - Try a CNN
+  - L2 weight decay, early stopping, label smoothing
+  - Train on Fashion MNIST
+  - Training ergonomics: better CLI flags and info
+  - Confusion matrix, per-class accuracy
+  - Multiple digits
+
 
 ## Resources
 
@@ -102,3 +107,7 @@ Started from Andrej Karpathy's [micrograd walkthrough](https://www.youtube.com/w
   - [Transformers, the tech behind LLMs](https://www.youtube.com/watch?v=wjZofJX0v4M&t=2s)
   - [Attention in transformers, step-by-step](https://www.youtube.com/watch?v=eMlx5fFNoYc)
 - Peter Bloem, [Transformers from scratch](https://peterbloem.nl/blog/transformers) - talks about transformers and attention
+
+Optimizers:
+- [Sutskever et al., "On the importance of initialization and momentum in deep learning"](https://proceedings.mlr.press/v28/sutskever13.html)
+- [Understanding SGD with momentum - Piiyush Kashyap](https://medium.com/@piyushkashyap045/understanding-sgd-with-momentum-in-deep-learning-a-beginner-friendly-guide-0252ede605b4)
