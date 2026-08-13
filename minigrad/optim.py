@@ -72,3 +72,13 @@ def step_decay(num_epochs=5000, lr=1.0, lr_decay_at=(0.5, 0.75), lr_decay_factor
         return l
 
     return f
+
+### Utils
+
+def clip_grad_norm(params, threshold):
+    total_norm = np.sqrt(sum(np.sum(p.grad**2) for p in params))
+    if total_norm > threshold:
+        scale = threshold / total_norm
+        for p in params:
+            p.grad *= scale
+
