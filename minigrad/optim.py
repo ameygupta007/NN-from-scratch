@@ -73,6 +73,19 @@ def step_decay(num_epochs=5000, lr=1.0, lr_decay_at=(0.5, 0.75), lr_decay_factor
 
     return f
 
+def warmup_then(warmup_steps, base_lr, after):
+    def f(t):
+        if t < warmup_steps:
+            return base_lr * (t + 1) / warmup_steps
+        return after(t - warmup_steps)
+    return f
+
+def cosine_decay(step, max_lr, total_steps, min_lr=0.0):
+    if step >= total_steps:
+        return min_lr
+    progress = step / total_steps
+    return min_lr + 0.5 * (max_lr - min_lr) * (1 + np.cos(np.pi * progress))
+
 ### Utils
 
 def clip_grad_norm(params, threshold):

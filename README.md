@@ -114,4 +114,5 @@ Optimizers:
   - [Understanding SGD with momentum - Piiyush Kashyap](https://medium.com/@piyushkashyap045/understanding-sgd-with-momentum-in-deep-learning-a-beginner-friendly-guide-0252ede605b4)
 - Adam:
   - [Kingma & Ba, "Adam: A Method for Stochastic Optimization"](https://arxiv.org/abs/1412.6980)
-  - 
+- LR warmup: [Xiong et al.](https://arxiv.org/abs/2002.04745)
+- 
