@@ -155,6 +155,33 @@ def test_tensor_matmul_1d_2d():
     assert np.allclose(x.grad, xt.grad.numpy())  # type: ignore
     assert np.allclose(W.grad, Wt.grad.numpy())  # type: ignore
 
+@pytest.mark.parametrize("a_shape, b_shape", [
+    ((2, 3, 4), (2, 4, 5)),           # simple batched
+    ((4, 2, 3, 4), (4, 2, 4, 5)),     # multi-dim batch
+    ((3, 4), (2, 4, 5)),              # broadcast: 2d @ batched-3d
+    ((2, 3, 4), (4, 5)),              # broadcast: batched-3d @ 2d
+    ((1, 3, 4), (2, 4, 5)),           # broadcast batch dim of size 1
+])
+def test_tensor_matmul_batched(a_shape, b_shape):
+    rng = np.random.default_rng(0)
+    A_init = rng.standard_normal(a_shape)
+    B_init = rng.standard_normal(b_shape)
+
+    A = Tensor(A_init)
+    B = Tensor(B_init)
+    C = A @ B
+    C.backward()
+
+    At = torch.tensor(A_init, dtype=torch.float64, requires_grad=True)
+    Bt = torch.tensor(B_init, dtype=torch.float64, requires_grad=True)
+    Ct = At @ Bt
+    Ct.backward(torch.ones_like(Ct))
+
+    assert np.allclose(C.data, Ct.detach().numpy())
+    assert np.allclose(A.grad, At.grad.numpy())  # type: ignore
+    assert np.allclose(B.grad, Bt.grad.numpy())  # type: ignore
+
+
 def test_tensor_matmul_2d_1d():
     # (n, k) @ (k,) -> (n,)
     A_init = [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]]

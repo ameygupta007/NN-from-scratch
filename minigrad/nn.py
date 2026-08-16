@@ -1,5 +1,5 @@
 import numpy as np
-from minigrad import Tensor
+from minigrad import Tensor, embedding
 
 from typing import Any, Dict
 
@@ -108,7 +108,17 @@ class MLP(Module):
             if i < len(self.layers) - 1 and self.dropout_p > 0:
                 x = dropout(x, self.dropout_p, training=self.training)
         return x
-    
+
+class Embedding(Module):
+    def __init__(self, n_embeddings, embedding_dim):
+        super().__init__()
+        self.w = Parameter(
+            np.random.randn(n_embeddings, embedding_dim)
+        )
+
+    def forward(self, indices):
+        return embedding(indices, self.w)
+
 def dropout(x, p, training=True):
     '''
     x : Tensor

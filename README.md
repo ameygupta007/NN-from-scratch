@@ -77,8 +77,8 @@ All that was needed for MNIST was a functioning autograd and MLP with a training
 
 Additionally:
 - new operations: layer_norm, reshape, concat, softmax, embedding
-- needed to change backprop algorithm to be iterative rather than recursive, to avoid hitting the recursion limit.
-
+- needed to change backprop algorithm to be iterative rather than recursive, to avoid hitting the recursion limit
+- batched matrix multiplication: the original architecture assumed we were operating only on 2D objects, one matrix at a time
 
 
 ## Next steps (ideas)

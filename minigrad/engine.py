@@ -52,24 +52,25 @@ class Tensor:
         return self * other
     
     def __matmul__(self, other):
+        # also handles batch matmul
         out = Tensor(self.data @ other.data, (self, other), '@')
 
         def _backward():
             a, b, g = self.data, other.data, out.grad
-            if a.ndim == 1 and b.ndim == 1:
-                self.grad  += g * b
-                other.grad += g * a
-            elif a.ndim == 1:
-                self.grad  += g @ b.T
-                other.grad += np.outer(a, g)
-            elif b.ndim == 1:
-                self.grad  += np.outer(g, b)
-                other.grad += a.T @ g
-            else:
-                self.grad  += g @ b.T
-                other.grad += a.T @ g
+            # promote a, b to 2D if they are 1D.
+            a2 = a[None, :] if a.ndim == 1 else a # row vector, matching numpy behaviour
+            b2 = b[:, None] if b.ndim == 1 else b # column vector, matching numpy behaviour
+            g2 = g
+            # undo what np strips in g if a or b were 1D
+            if b.ndim == 1: g2 = np.expand_dims(g2, -1)
+            if a.ndim == 1: g2 = np.expand_dims(g2, -2)
+            grad_a = g2 @ b2.swapaxes(-1, -2)
+            grad_b = a2.swapaxes(-1, -2) @ g2
+            if a.ndim == 1: grad_a = grad_a.squeeze(-2)   # undo the row-vec promotion
+            if b.ndim == 1: grad_b = grad_b.squeeze(-1)   # undo the col-vec promotion
+            self.grad += _unbroadcast(grad_a, self.data.shape)
+            other.grad += _unbroadcast(grad_b, other.data.shape)
         out._backward = _backward
-
         return out
 
     def __rmatmul__(self, other):
