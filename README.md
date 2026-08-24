@@ -4,10 +4,10 @@ A small neural network library built from scratch using NumPy (no PyTorch/Tensor
 
 Includes an autograd engine (`minigrad/engine.py`) with gradients that numerically match PyTorch on autograd tests.
 
-Demo hosted at https://whatdigit.vercel.app, where you can draw a digit and see the model's predictions.
+Demo hosted at https://digit.ameyg.dev, where you can draw a digit and see the model's predictions.
 
 
-[![Demo](assets/demo.gif)](https://whatdigit.vercel.app)
+[![Demo](assets/demo.gif)](https://digit.ameyg.dev)
 
 ## Files
 
