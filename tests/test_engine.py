@@ -71,7 +71,7 @@ def test_tensor_matmul_forward():
     B = Tensor([[7.0, 8.0], [9.0, 10.0], [11.0, 12.0]])    # (3, 2)
     C = A @ B
     expected = np.array([[58.0, 64.0], [139.0, 154.0]])
-    assert C.data.shape == (2, 2)
+    assert C.shape == (2, 2)
     assert np.allclose(C.data, expected)
 
 def test_tensor_matmul_backward():
@@ -130,7 +130,7 @@ def test_tensor_matmul_1d_1d():
     ct = at @ bt
     ct.backward()
 
-    assert c.data.shape == ()
+    assert c.shape == ()
     assert np.allclose(c.data, ct.detach().numpy())
     assert np.allclose(a.grad, at.grad.numpy())  # type: ignore
     assert np.allclose(b.grad, bt.grad.numpy())  # type: ignore
@@ -150,7 +150,7 @@ def test_tensor_matmul_1d_2d():
     yt = xt @ Wt
     yt.backward(torch.ones_like(yt))
 
-    assert y.data.shape == (3,)
+    assert y.shape == (3,)
     assert np.allclose(y.data, yt.detach().numpy())
     assert np.allclose(x.grad, xt.grad.numpy())  # type: ignore
     assert np.allclose(W.grad, Wt.grad.numpy())  # type: ignore
@@ -197,7 +197,7 @@ def test_tensor_matmul_2d_1d():
     yt = At @ xt
     yt.backward(torch.ones_like(yt))
 
-    assert y.data.shape == (2,)
+    assert y.shape == (2,)
     assert np.allclose(y.data, yt.detach().numpy())
     assert np.allclose(A.grad, At.grad.numpy())  # type: ignore
     assert np.allclose(x.grad, xt.grad.numpy())  # type: ignore
@@ -285,7 +285,7 @@ def test_tensor_sum_no_axis():
     x = Tensor(x_init)
     s = x.sum()
     s.backward()
-    assert s.data.shape == ()
+    assert s.shape == ()
     assert np.isclose(s.data, 10.0)
     assert np.allclose(x.grad, np.ones_like(x.data))
 
@@ -308,7 +308,7 @@ def test_tensor_sum_axis_keepdims():
     x_init = [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]]
     x = Tensor(x_init)
     s = x.sum(axis=1, keepdims=True)
-    assert s.data.shape == (2, 1)
+    assert s.shape == (2, 1)
     upstream = Tensor([[2.0], [-1.0]])
     y = s * upstream
     y.backward()
@@ -347,7 +347,7 @@ def test_tensor_broadcast_row_plus_col():
     yt = rt + ct
     yt.backward(torch.ones_like(yt))
 
-    assert y.data.shape == (2, 3)
+    assert y.shape == (2, 3)
     assert np.allclose(r.grad, rt.grad.numpy())  # type: ignore
     assert np.allclose(c.grad, ct.grad.numpy())  # type: ignore
 
@@ -410,7 +410,7 @@ def test_softmax_cross_entropy_forward_backward_vs_torch():
     loss_t = torch.nn.functional.cross_entropy(zt, torch.tensor(labels))
     loss_t.backward()
 
-    assert loss.data.shape == ()
+    assert loss.shape == ()
     assert np.isclose(loss.data, loss_t.detach().numpy())
     assert np.allclose(z.grad, zt.grad.numpy())  # type: ignore
 
@@ -438,7 +438,7 @@ def test_tensor_transpose(dim1, dim2):
 
     t = Tensor(arr)
     t1 = t.transpose(dim1, dim2)
-    w = Tensor(np.random.randn(*t1.data.shape))
+    w = Tensor(np.random.randn(*t1.shape))
     loss = (t1 * w).sum()
     loss.backward()
 

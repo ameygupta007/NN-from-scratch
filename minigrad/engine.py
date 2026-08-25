@@ -18,7 +18,15 @@ class Tensor:
 
     def __repr__(self):
         return f"Tensor(data={self.data})"
-    
+
+    @property
+    def shape(self):
+        return self.data.shape
+
+    @property
+    def ndim(self):
+        return self.data.ndim
+
     def __add__(self, other):
         if not isinstance(other, Tensor):
             other = Tensor(other)
@@ -26,8 +34,8 @@ class Tensor:
         out = Tensor(self.data + other.data, (self, other), '+')
 
         def _backward():
-            self.grad += _unbroadcast(out.grad, self.data.shape)
-            other.grad += _unbroadcast(out.grad, other.data.shape)
+            self.grad += _unbroadcast(out.grad, self.shape)
+            other.grad += _unbroadcast(out.grad, other.shape)
         out._backward = _backward
 
         return out
@@ -42,8 +50,8 @@ class Tensor:
         out = Tensor(self.data * other.data, (self, other), '*')
 
         def _backward():
-            self.grad += _unbroadcast(other.data * out.grad, self.data.shape)
-            other.grad += _unbroadcast(self.data * out.grad, other.data.shape)
+            self.grad += _unbroadcast(other.data * out.grad, self.shape)
+            other.grad += _unbroadcast(self.data * out.grad, other.shape)
         out._backward = _backward
 
         return out
@@ -68,8 +76,8 @@ class Tensor:
             grad_b = a2.swapaxes(-1, -2) @ g2
             if a.ndim == 1: grad_a = grad_a.squeeze(-2)   # undo the row-vec promotion
             if b.ndim == 1: grad_b = grad_b.squeeze(-1)   # undo the col-vec promotion
-            self.grad += _unbroadcast(grad_a, self.data.shape)
-            other.grad += _unbroadcast(grad_b, other.data.shape)
+            self.grad += _unbroadcast(grad_a, self.shape)
+            other.grad += _unbroadcast(grad_b, other.shape)
         out._backward = _backward
         return out
 
@@ -97,7 +105,7 @@ class Tensor:
         assert isinstance(other, (int, float)), "only supporting int/float powers"
         out = Tensor(self.data**other, (self,), f'**{other}')
         def _backward():
-            self.grad += _unbroadcast(other * self.data ** (other -1) * out.grad, self.data.shape)
+            self.grad += _unbroadcast(other * self.data ** (other -1) * out.grad, self.shape)
         out._backward = _backward
 
         return out
@@ -111,7 +119,7 @@ class Tensor:
     def exp(self):
         out = Tensor(np.exp(self.data), (self, ), 'exp')
         def _backward():
-            self.grad += _unbroadcast(out.data * out.grad, self.data.shape)
+            self.grad += _unbroadcast(out.data * out.grad, self.shape)
         
         out._backward = _backward
         return out
@@ -120,7 +128,7 @@ class Tensor:
         x = self.data
         out = Tensor(np.tanh(x), (self,), 'tanh')
         def _backward():
-            self.grad += _unbroadcast((1 - out.data**2) * out.grad, self.data.shape)
+            self.grad += _unbroadcast((1 - out.data**2) * out.grad, self.shape)
         out._backward = _backward
         return out
 
@@ -128,7 +136,7 @@ class Tensor:
         x = np.maximum(0.0, self.data)
         out = Tensor(x, (self,), 'ReLU')
         def _backward():
-            self.grad += _unbroadcast(out.grad * (out.data > 0), self.data.shape)
+            self.grad += _unbroadcast(out.grad * (out.data > 0), self.shape)
         out._backward = _backward
         return out
 
@@ -144,7 +152,7 @@ class Tensor:
         return out
 
     def mean(self, axis=None, keepdims=False):
-        N = self.data.size if axis is None else self.data.shape[axis]
+        N = self.data.size if axis is None else self.shape[axis]
         s = self.data.sum(axis=axis, keepdims=keepdims)
         out = Tensor(s / N, (self, ), 'mean')
         def _backward():
@@ -174,11 +182,12 @@ class Tensor:
     def reshape(self, shape):
         out = Tensor(self.data.reshape(shape), (self, ), 'reshape')
         def _backward():
-            self.grad += out.grad.reshape(self.data.shape)
+            self.grad += out.grad.reshape(self.shape)
         out._backward = _backward
         return out
     
     def transpose(self, axis1, axis2):
+        # swap axis1 and axis2
         out = Tensor(self.data.swapaxes(axis1, axis2), (self, ), 'transpose')
         def _backward():
             self.grad += out.grad.swapaxes(axis1, axis2)
@@ -227,7 +236,7 @@ def concat(ts, axis=0):
     ts = tuple(ts)
     out = Tensor(np.concatenate([t.data for t in ts], axis=axis), ts, 'concat')
     
-    splits = np.cumsum([t.data.shape[axis] for t in ts])[:-1]
+    splits = np.cumsum([t.shape[axis] for t in ts])[:-1]
     def _backward():
         for t, g in zip(ts, np.split(out.grad, splits, axis=axis)):
             t.grad += g

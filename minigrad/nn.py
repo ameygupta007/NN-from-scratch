@@ -119,6 +119,55 @@ class Embedding(Module):
     def forward(self, indices):
         return embedding(indices, self.w)
 
+class MultiHeadAttention(Module):
+    def __init__(self, k, heads=4, mask=True):
+        super().__init__()
+        assert k % heads == 0
+        self.k, self.heads = k, heads
+        self.mask = mask
+
+        # compute queries, keys, values for all heads
+        self.toqueries = Linear(k, k, bias=False)
+        self.tokeys = Linear(k, k, bias=False)
+        self.tovalues = Linear(k, k, bias=False)
+
+        # apply after multi-head self attention
+        self.unifyheads = Linear(k,k)
+
+    def forward(self, x):
+        assert isinstance(x, Tensor)
+        # b: number of batches
+        # t: number of input vectors in batch
+        # k: dimension of vectors
+        b, t, k = x.shape
+        h = self.heads
+
+        queries = self.toqueries(x)
+        keys = self.tokeys(x)
+        values = self.tovalues(x)
+
+        # cut according to h, fold it into the batch dimension
+        s = k // h
+        qx = queries.reshape((b, t, h, s)).transpose(1, 2)
+        kx = keys.reshape((b, t, h, s)).transpose(1,2)
+        vx = values.reshape((b, t, h, s)).transpose(1,2)
+
+        attention = scaled_dot_product_attention(qx, kx, vx, mask=self.mask)
+        attention = attention.transpose(1,2).reshape((b,t,k)) # (b,h,t,s) -> (b,t,h,s) -> (b,t,k)
+        return self.unifyheads(attention)
+
+def scaled_dot_product_attention(q, k, v, mask=True):
+    d = q.shape[-1]
+    w = q @ k.transpose(-1, -2) / np.sqrt(d)
+    # mask
+    if mask:
+        causal = np.triu(np.full((w.shape[-2], w.shape[-1]), np.float64(-1e9)), k=1)
+        w = w + causal
+    w_softmax = w.softmax(axis=-1) # row-wise softmax
+
+    out = w_softmax @ v
+    return out
+
 def dropout(x, p, training=True):
     '''
     x : Tensor
@@ -127,6 +176,6 @@ def dropout(x, p, training=True):
     '''
     if not training or p == 0.0:
         return x
-    mask = (np.random.rand(*x.data.shape) > p).astype(x.data.dtype) / (1.0 - p)
+    mask = (np.random.rand(*x.shape) > p).astype(x.data.dtype) / (1.0 - p)
     return x * mask
     
