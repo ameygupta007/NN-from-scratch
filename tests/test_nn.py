@@ -1,8 +1,8 @@
 import numpy as np
 import pytest
 import torch
-from minigrad import Tensor, Module, Linear, MLP, dropout
-from minigrad.nn import Parameter, MultiHeadAttention, scaled_dot_product_attention
+from minigrad import Tensor, Module, Linear, MLP, MultiHeadAttention, scaled_dot_product_attention, dropout
+from minigrad.nn import Parameter
 
 
 # --- Parameter marker ---

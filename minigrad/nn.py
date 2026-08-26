@@ -1,5 +1,6 @@
 import numpy as np
 from minigrad import Tensor, embedding
+import minigrad.functional as F
 
 from typing import Any, Dict
 
@@ -85,7 +86,7 @@ class Linear(Module):
         return X @ self.W + self.b if self.bias else X @ self.W
     
 class MLP(Module):
-    def __init__(self, nin, nouts, dropout_p=0.0):
+    def __init__(self, nin, nouts, dropout_p=0.0, activation=F.tanh):
         super().__init__()
         # nin - number of inputs
         # nouts - list of number of neurons in each layer
@@ -96,6 +97,7 @@ class MLP(Module):
             self.register_module(f"Layer_{i}", l)
 
         self.dropout_p = dropout_p
+        self.activation = activation
 
     def forward(self, x):
         # call each layer one after the other
@@ -103,7 +105,7 @@ class MLP(Module):
             x = layer(x)
             if i < len(self.layers) - 1:
                 # activation for all but last layer
-                x = x.tanh()
+                x = self.activation(x)
 
             if i < len(self.layers) - 1 and self.dropout_p > 0:
                 x = dropout(x, self.dropout_p, training=self.training)
@@ -156,7 +158,7 @@ class MultiHeadAttention(Module):
         attention = attention.transpose(1,2).reshape((b,t,k)) # (b,h,t,s) -> (b,t,h,s) -> (b,t,k)
         return self.unifyheads(attention)
 
-def scaled_dot_product_attention(q, k, v, mask=True):
+def scaled_dot_product_attention(q, k, v, mask=False):
     d = q.shape[-1]
     w = q @ k.transpose(-1, -2) / np.sqrt(d)
     # mask

@@ -107,6 +107,7 @@ Started from Andrej Karpathy's [micrograd walkthrough](https://www.youtube.com/w
   - [Transformers, the tech behind LLMs](https://www.youtube.com/watch?v=wjZofJX0v4M&t=2s)
   - [Attention in transformers, step-by-step](https://www.youtube.com/watch?v=eMlx5fFNoYc)
 - Peter Bloem, [Transformers from scratch](https://peterbloem.nl/blog/transformers) - talks about transformers and attention
+- [Understanding Deep Learning](https://udlbook.github.io/udlbook/), Simon Prince (chapter 12) - very useful for a precise specification of transformers
 
 Optimizers:
 - Momentum:

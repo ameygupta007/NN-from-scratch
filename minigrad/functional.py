@@ -8,7 +8,12 @@ def layer_norm(x, weight=None, bias=None, eps=1e-5):
     out = weight * diff / (var + eps).sqrt() + bias
     return out
 
+def tanh(x):
+    return x.tanh()
+
 def gelu(x):
     # approximate tanh GELU
     return 0.5 * x * (1 + (np.sqrt(2 /np.pi) * (x + 0.044715 * (x ** 3))).tanh())
 
+def relu(x):
+    return x.relu()
