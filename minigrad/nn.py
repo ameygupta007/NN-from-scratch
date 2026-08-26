@@ -121,6 +121,18 @@ class Embedding(Module):
     def forward(self, indices):
         return embedding(indices, self.w)
 
+class LayerNorm(Module):
+    '''
+    LayerNorm module with learnable weight and bias.
+    '''
+    def __init__(self):
+        super().__init__()
+        self.w = Parameter(1.0)
+        self.b = Parameter(0.0)
+
+    def forward(self, x):
+        return F.layer_norm(x, self.w, self.b, eps=1e-5)
+
 class MultiHeadAttention(Module):
     def __init__(self, k, heads=4, mask=True):
         super().__init__()
@@ -157,6 +169,17 @@ class MultiHeadAttention(Module):
         attention = scaled_dot_product_attention(qx, kx, vx, mask=self.mask)
         attention = attention.transpose(1,2).reshape((b,t,k)) # (b,h,t,s) -> (b,t,h,s) -> (b,t,k)
         return self.unifyheads(attention)
+
+class TransformerBlock(Module):
+    '''
+    Decoder transformer block. 
+    '''
+    def __init__(self, k, heads=4):
+        super().__init__()
+        pass
+
+    def forward(self, x):
+        pass
 
 def scaled_dot_product_attention(q, k, v, mask=False):
     d = q.shape[-1]
