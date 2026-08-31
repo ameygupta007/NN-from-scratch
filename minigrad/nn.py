@@ -1,3 +1,4 @@
+from __future__ import annotations
 import numpy as np
 from minigrad import Tensor, embedding
 import minigrad.functional as F
@@ -16,7 +17,7 @@ class Module:
     """
     # type annotations so static analysers know these attributes exist
     _params: Dict[str, Parameter]
-    _modules: Dict[str, "Module"]
+    _modules: Dict[str, Module]
     
     def __init__(self):
         self.__dict__["_params"] = dict()
@@ -72,10 +73,11 @@ class Module:
             m.eval()
         
 class Linear(Module):
-    def __init__(self, nin, nout, bias=True):
+    def __init__(self, nin, nout, bias=True, init_std=None):
         super().__init__()
-        # He init to keep variance from blowing up
-        self.W = Parameter(np.random.randn(nin, nout) * np.sqrt(2.0 / nin)) 
+        # Default He init to keep variance from blowing up
+        std = np.sqrt(2.0 / nin) if init_std is None else init_std
+        self.W = Parameter(np.random.randn(nin, nout) * std) 
         if bias:
             self.b = Parameter(np.zeros(nout))
         self.bias = bias
@@ -123,30 +125,30 @@ class Embedding(Module):
 
 class LayerNorm(Module):
     '''
-    LayerNorm module with learnable weight and bias.
+    LayerNorm module with learnable weight and bias. Wraps F.layer_norm
     '''
-    def __init__(self):
+    def __init__(self, dim):
         super().__init__()
-        self.w = Parameter(1.0)
-        self.b = Parameter(0.0)
+        self.w = Parameter(np.ones(dim))
+        self.b = Parameter(np.zeros(dim))
 
     def forward(self, x):
         return F.layer_norm(x, self.w, self.b, eps=1e-5)
 
 class MultiHeadAttention(Module):
-    def __init__(self, k, heads=4, mask=True):
+    def __init__(self, k, heads=4, mask=True, init_std=0.02, proj_std=None):
         super().__init__()
         assert k % heads == 0
         self.k, self.heads = k, heads
         self.mask = mask
 
         # compute queries, keys, values for all heads
-        self.toqueries = Linear(k, k, bias=False)
-        self.tokeys = Linear(k, k, bias=False)
-        self.tovalues = Linear(k, k, bias=False)
+        self.toqueries = Linear(k, k, bias=False, init_std=init_std)
+        self.tokeys = Linear(k, k, bias=False, init_std=init_std)
+        self.tovalues = Linear(k, k, bias=False, init_std=init_std)
 
         # apply after multi-head self attention
-        self.unifyheads = Linear(k,k)
+        self.unifyheads = Linear(k,k, init_std= proj_std or init_std)
 
     def forward(self, x):
         assert isinstance(x, Tensor)
@@ -172,14 +174,24 @@ class MultiHeadAttention(Module):
 
 class TransformerBlock(Module):
     '''
-    Decoder transformer block. 
+    Decoder transformer block, uses pre-norm. 
     '''
-    def __init__(self, k, heads=4):
+    def __init__(self, k, heads=4, dropout_p=0.0):
         super().__init__()
-        pass
+
+        self.attn = MultiHeadAttention(k, heads, mask=True)
+        self.ln1 = LayerNorm(k)
+        self.ln2 = LayerNorm(k)
+
+        self.expand = Linear(k, 4*k)
+        self.contract = Linear(4*k, k)
+        self.dropout_p = dropout_p
 
     def forward(self, x):
-        pass
+        x = x + dropout(self.attn(self.ln1(x)), p=self.dropout_p, training=self.training)
+        h = self.contract(F.gelu(self.expand(self.ln2(x))))
+        x = x + dropout(h, self.dropout_p, self.training)
+        return x
 
 def scaled_dot_product_attention(q, k, v, mask=False):
     d = q.shape[-1]
