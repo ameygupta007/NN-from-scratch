@@ -193,6 +193,28 @@ class TransformerBlock(Module):
         x = x + dropout(h, self.dropout_p, self.training)
         return x
 
+class Transformer(Module):
+    '''
+    Decoder stack - token embedding, positional embedding, N transformer blocks.
+    '''
+    def __init__(self, vocab_size, embed_dim, layers, heads=4, dropout_p=0.0):
+        super().__init__()
+        self.token_embed = Embedding(vocab_size, embed_dim)
+
+        self.blocks = [TransformerBlock(embed_dim, heads, dropout_p) for _ in range(layers)]
+        for i, block in enumerate(self.blocks):
+            self.register_module(f"Block_{i}", block)
+
+        self.head_p = Linear(embed_dim, vocab_size)
+
+    def forward(self, indices):
+        x = self.token_embed(indices)
+        for b in self.blocks:
+            x = b(x)
+        x = self.head_p(x).softmax(axis=1)
+        return x
+
+
 def scaled_dot_product_attention(q, k, v, mask=False):
     d = q.shape[-1]
     w = q @ k.transpose(-1, -2) / np.sqrt(d)
