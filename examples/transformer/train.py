@@ -1,4 +1,4 @@
-from minigrad import Module, Transformer
+from minigrad import Tensor, Transformer
 import numpy as np
 from data import load_data
 import minigrad.optim as optim
@@ -41,17 +41,17 @@ def train(
         pred = model(x)
 
         loss = pred.softmax_cross_entropy(y)
-        loss_vals.append(loss)
+        loss_vals.append(loss.data)
 
         optimiser.zero_grad()
         loss.backward()
         optimiser.step()
 
 
-        if step % 10 == 0:
-            print(step, loss.data, get_memory_usage())
-        if step % 20 == 0:
+        if step % 1 == 0:
             gc.collect()
+        if step % 50 == 0:
+            print(step, loss.data, get_memory_usage(), f"live Tensors: {tensor_census()} MB")
 
     return model
 
@@ -64,6 +64,10 @@ def get_memory_usage():
     mem_mb = mem_bytes / (1024 * 1024)
     return mem_mb
 
+def tensor_census():
+    ts = [o for o in gc.get_objects() if isinstance(o, Tensor)]
+    mb = sum(t.data.nbytes + t.grad.nbytes for t in ts) / 2**20
+    return len(ts), mb
 
 if __name__ == '__main__':
     train_data, test_data, encode, decode, vocab_size  = load_data()

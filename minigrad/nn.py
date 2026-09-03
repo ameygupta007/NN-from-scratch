@@ -211,7 +211,7 @@ class Transformer(Module):
         x = self.token_embed(indices)
         for b in self.blocks:
             x = b(x)
-        x = self.head_p(x).softmax(axis=1)
+        x = self.head_p(x)
         return x
 
 
