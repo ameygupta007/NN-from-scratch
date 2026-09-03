@@ -6,6 +6,7 @@ from data import load_data
 import os
 import psutil
 import gc
+import argparse
 
 def get_batch(data, block_size, batch_size):
     data = np.asarray(data, dtype=np.int64)
@@ -26,6 +27,7 @@ def one_hot(y_ints, num_classes):
     return y_oh
 
 def generate(model : Transformer, length, encode, decode, block_size, start="r"):
+    model.eval()
     out = list(encode(start))
 
     for i in range(length):
@@ -62,9 +64,10 @@ def train(
 
         if step % 1 == 0:
             gc.collect()
-        if step % 50 == 0:
-            print(step, loss.data, get_memory_usage(), f"live Tensors: {tensor_census()} MB")
-
+        if step > 0 and step % 50 == 0:
+            print(step, sum(loss_vals[-50:]) / 50, get_memory_usage(), f"live Tensors: {tensor_census()} MB")
+        if step == 0:
+            print(0, loss.data)
     return model
 
 def get_memory_usage():
@@ -84,11 +87,20 @@ def tensor_census():
 if __name__ == '__main__':
     train_data, test_data, encode, decode, vocab_size  = load_data()
     t = Transformer(vocab_size, 128, 4, 4, dropout_p=0.2)
-    t = load("overfit.npz", Transformer)
+    path = 'test_train.npz'
+    t = load(path, Transformer)
+    try:
+        train(t, train_data, vocab_size, block_size=64, batch_size=10, steps=2000)
+    except KeyboardInterrupt:
+        print(f"\nInterrupted... saving to {path}")
+    finally:
+        save(t, path)
 
-    # train(t, train_data[:1000], vocab_size, block_size=64, batch_size=10, steps=2000)
-    # save(t, "overfit.npz")
-    seed = 'hello'
+    print('---------')
+    print('SAMPLE:')
+    print('---------')
+    t = load(path, Transformer)
+    seed = '''\n'''
     predicted = generate(t, 500, encode, decode, 64, start=seed)
     print(seed)
     print("-"*10)
