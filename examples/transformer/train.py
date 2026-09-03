@@ -25,13 +25,13 @@ def one_hot(y_ints, num_classes):
     np.put_along_axis(y_oh, y_ints[..., None], 1, axis=-1)
     return y_oh
 
-def generate(model : Transformer, length, encode, decode, start="\n"):
-    start = encode(start)
-    out = [start[0]]
-    
+def generate(model : Transformer, length, encode, decode, block_size, start="r"):
+    out = list(encode(start))
 
     for i in range(length):
-        pred = np.argmax(model(np.asarray(out)[None,...]).softmax(axis=-1))
+        context = np.asarray(out[-block_size:])[None,...]
+        logits = model(context).softmax(axis=-1).data[0,-1]
+        pred = np.random.choice(np.arange(len(logits)), p=logits)
         out.append(pred)
 
     return decode(out)
@@ -83,9 +83,13 @@ def tensor_census():
 
 if __name__ == '__main__':
     train_data, test_data, encode, decode, vocab_size  = load_data()
-    # t = Transformer(vocab_size, 128, 4, 4, dropout_p=0.2)
+    t = Transformer(vocab_size, 128, 4, 4, dropout_p=0.2)
     t = load("overfit.npz", Transformer)
 
-    # train(t, train_data[:1000], vocab_size, block_size=64, batch_size=10, steps=100)
+    # train(t, train_data[:1000], vocab_size, block_size=64, batch_size=10, steps=2000)
     # save(t, "overfit.npz")
-    print(generate(t, 30, encode, decode))
+    seed = 'hello'
+    predicted = generate(t, 500, encode, decode, 64, start=seed)
+    print(seed)
+    print("-"*10)
+    print(predicted[len(seed):])
