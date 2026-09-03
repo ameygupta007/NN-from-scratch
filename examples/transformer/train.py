@@ -1,4 +1,4 @@
-from minigrad import Tensor, Transformer
+from minigrad import Tensor, Transformer, save, load
 import numpy as np
 from data import load_data
 import minigrad.optim as optim
@@ -72,6 +72,7 @@ def tensor_census():
 if __name__ == '__main__':
     train_data, test_data, encode, decode, vocab_size  = load_data()
     t = Transformer(vocab_size, 128, 4, 4, dropout_p=0.2)
+    t = load("overfit.npz", Transformer)
 
-    train(t, train_data[:1000], vocab_size, block_size=64, batch_size=10, steps=2000)
-    np.savez("overfit.npz", *[p.data for p in t.parameters()])
+    train(t, train_data[:1000], vocab_size, block_size=64, batch_size=10, steps=100)
+    save(t, "overfit.npz")

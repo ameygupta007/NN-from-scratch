@@ -23,6 +23,7 @@ class Module:
         self.__dict__["_params"] = dict()
         self.__dict__["_modules"] = dict()
         self.training = False
+        self._config = dict()
 
     def parameters(self) -> list[Parameter]:
         params = list(self._params.values())
@@ -32,7 +33,42 @@ class Module:
 
     def modules(self) -> list[Module]:
         return list(self._modules.values())
+
+    def named_parameters(self, prefix=""):
+        '''
+        return a generator of all the parameters that belong to this Module and descendants, named for identification.
+        '''
+        for name, p in self._params.items():
+            yield f"{prefix}{name}", p
+        for name, m in self._modules.items():
+            yield from m.named_parameters(f"{prefix}{name}.")
+
+    def state_dict(self):
+        return {name : p.data for name, p in self.named_parameters()}
+
+    def config(self):
+        return self._config
     
+    def load_state_dict(self, sd, ignore_extra=False):
+        '''
+        load values for all parameters that belong to this Module from sd. Names and shapes must match.
+        sd: dictionary, {name : data} where data is a numpy array.
+        '''
+        params = {name : p for name, p in self.named_parameters()}
+        own = set(params.keys())
+        other = set(sd.keys())
+        missing = own - other
+        extra = other - own
+        if missing or (not ignore_extra and extra):
+            raise KeyError(f"missing={sorted(missing)}, extra={sorted(extra)}")
+        
+        for name, p in params.items():
+            # check shape matches
+            new = sd[name]
+            if new.shape != p.data.shape:
+                raise ValueError(f"{name}: checkpoint {new.shape} != model {p.data.shape}")
+            p.data = new
+
     def __setattr__(self, name: str, value: Any) -> None:
         if "_params" not in self.__dict__: raise RuntimeError("Module.__init__() not called")
 
@@ -82,6 +118,8 @@ class Linear(Module):
             self.b = Parameter(np.zeros(nout))
         self.bias = bias
 
+        self._config = dict(nin=nin, nout=nout, bias=bias, init_std=init_std)
+
     def forward(self, X):
         if not isinstance(X, Tensor):
             X = Tensor(X)
@@ -100,6 +138,8 @@ class MLP(Module):
 
         self.dropout_p = dropout_p
         self.activation = activation
+
+        self._config = dict(nin=nin, nouts=nouts, dropout_p=dropout_p, activation=activation)
 
     def forward(self, x):
         # call each layer one after the other
@@ -120,6 +160,8 @@ class Embedding(Module):
             np.random.randn(n_embeddings, embedding_dim)
         )
 
+        self._config = dict(n_embeddings = n_embeddings, embedding_dim=embedding_dim)
+
     def forward(self, indices):
         return embedding(indices, self.w)
 
@@ -131,6 +173,8 @@ class LayerNorm(Module):
         super().__init__()
         self.w = Parameter(np.ones(dim))
         self.b = Parameter(np.zeros(dim))
+
+        self._config = dict(dim=dim)
 
     def forward(self, x):
         return F.layer_norm(x, self.w, self.b, eps=1e-5)
@@ -149,6 +193,8 @@ class MultiHeadAttention(Module):
 
         # apply after multi-head self attention
         self.unifyheads = Linear(k,k, init_std= proj_std or init_std)
+
+        self._config = dict(k=k, heads=heads, mask=mask, init_std=init_std, proj_std=proj_std)
 
     def forward(self, x):
         assert isinstance(x, Tensor)
@@ -187,6 +233,8 @@ class TransformerBlock(Module):
         self.contract = Linear(4*k, k)
         self.dropout_p = dropout_p
 
+        self._config = dict(k=k, heads=heads, dropout_p=dropout_p)
+
     def forward(self, x):
         x = x + dropout(self.attn(self.ln1(x)), p=self.dropout_p, training=self.training)
         h = self.contract(F.gelu(self.expand(self.ln2(x))))
@@ -206,6 +254,8 @@ class Transformer(Module):
             self.register_module(f"Block_{i}", block)
 
         self.head_p = Linear(embed_dim, vocab_size)
+
+        self._config = dict(vocab_size=vocab_size, embed_dim=embed_dim, layers=layers, heads=heads, dropout_p=dropout_p)
 
     def forward(self, indices):
         x = self.token_embed(indices)
