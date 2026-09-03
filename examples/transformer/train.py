@@ -40,34 +40,48 @@ def generate(model : Transformer, length, encode, decode, block_size, start="r")
 
 
 def train(
-        model : Transformer, data, vocab_size, block_size, batch_size, steps
+        model : Transformer, data, vocab_size, block_size, batch_size, steps, save_path=None, save_every=0
 ):
         
     params = model.parameters()
     optimiser = optim.Adam(params)
     loss_vals = []
     model.train()
-    for step in range(steps):
 
-        x,y = get_batch(data, block_size, batch_size)
-        y = one_hot(y, vocab_size)
+    try:
+        for step in range(steps):
 
-        pred = model(x)
+            x,y = get_batch(data, block_size, batch_size)
+            y = one_hot(y, vocab_size)
 
-        loss = pred.softmax_cross_entropy(y)
-        loss_vals.append(loss.data)
+            pred = model(x)
 
-        optimiser.zero_grad()
-        loss.backward()
-        optimiser.step()
+            loss = pred.softmax_cross_entropy(y)
+            loss_vals.append(loss.data)
+
+            optimiser.zero_grad()
+            loss.backward()
+            optimiser.step()
 
 
-        if step % 1 == 0:
-            gc.collect()
-        if step > 0 and step % 50 == 0:
-            print(step, sum(loss_vals[-50:]) / 50, get_memory_usage(), f"live Tensors: {tensor_census()} MB")
-        if step == 0:
-            print(0, loss.data)
+            if step % 1 == 0:
+                gc.collect()
+            if step > 0 and step % 50 == 0:
+                print(step, sum(loss_vals[-50:]) / 50, get_memory_usage(), f"live Tensors: {tensor_census()} MB")
+            if step == 0:
+                print(0, loss.data)        
+
+            if save_every and step and step % save_every == 0:
+                save(model, save_path)
+                
+    except KeyboardInterrupt:
+        print(f"\nInterrupted...")
+
+    finally:
+        if save_path:
+            print(f"Saved --> {save_path}")
+            save(model, save_path)
+
     return model
 
 def get_memory_usage():
@@ -85,23 +99,41 @@ def tensor_census():
     return len(ts), mb
 
 if __name__ == '__main__':
+    p = argparse.ArgumentParser( prog='TRAIN')
+    p.add_argument('-r', '--resume', metavar='PATH', help='load weights from npz and continue')
+    p.add_argument('--save', metavar='PATH', default='chkpt.npz')
+    p.add_argument('--save_every', type=int, default=500)
+    p.add_argument('--steps', type=int, default=5000)
+    p.add_argument('--block-size', type=int, default=64)
+    p.add_argument('--batch-size', type=int, default=10)
+    p.add_argument('--train-chars', type=int, default=0, help='truncate the corpus. 0 uses all of it')
+    args = p.parse_args()
+    
     train_data, test_data, encode, decode, vocab_size  = load_data()
-    t = Transformer(vocab_size, 128, 4, 4, dropout_p=0.2)
-    path = 'test_train.npz'
-    t = load(path, Transformer)
-    try:
-        train(t, train_data, vocab_size, block_size=64, batch_size=10, steps=2000)
-    except KeyboardInterrupt:
-        print(f"\nInterrupted... saving to {path}")
-    finally:
-        save(t, path)
 
-    print('---------')
-    print('SAMPLE:')
-    print('---------')
-    t = load(path, Transformer)
-    seed = '''\n'''
-    predicted = generate(t, 500, encode, decode, 64, start=seed)
-    print(seed)
-    print("-"*10)
-    print(predicted[len(seed):])
+    if args.resume:
+        model = load(args.resume, Transformer)
+        cfg = model.config()
+        if cfg['vocab_size'] != vocab_size:
+            raise SystemExit(f"vocab mismatch: checkpoint {cfg['vocab_size']}, data {vocab_size}")
+        print(f"Resumed from {args.resume}: {cfg}")
+    else:
+        model = Transformer(vocab_size, 128, 4, 4, dropout_p=0.2)
+
+    data = train_data if args.train_chars == 0 else train_data[:args.train_chars]
+
+    train(model, data, vocab_size, 
+          args.block_size, args.batch_size, args.steps, 
+          save_path=args.save, save_every=args.save_every)
+    
+
+
+    # print('---------')
+    # print('SAMPLE:')
+    # print('---------')
+    # t = load(path, Transformer)
+    # seed = '''\n'''
+    # predicted = generate(t, 500, encode, decode, 64, start=seed)
+    # print(seed)
+    # print("-"*10)
+    # print(predicted[len(seed):])
