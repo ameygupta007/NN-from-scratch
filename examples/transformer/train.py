@@ -73,4 +73,5 @@ if __name__ == '__main__':
     train_data, test_data, encode, decode, vocab_size  = load_data()
     t = Transformer(vocab_size, 128, 4, 4, dropout_p=0.2)
 
-    train(t, train_data[:1000], vocab_size, 64, 10, 10000)
+    train(t, train_data[:1000], vocab_size, block_size=64, batch_size=10, steps=2000)
+    np.savez("overfit.npz", *[p.data for p in t.parameters()])
