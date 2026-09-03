@@ -164,13 +164,16 @@ class Tensor:
         return out
     
     def softmax_cross_entropy(self, y):
+        '''
+        expects y: np array of probabilities for each logit
+        '''
         assert isinstance(y, np.ndarray)
         z = self.data
         z_shift = z - z.max(axis=-1, keepdims=True)
         exps = np.exp(z_shift)
         sm = exps / exps.sum(axis=-1, keepdims=True)
         lse = np.log(exps.sum(axis=-1, keepdims=True))
-        N = z.shape[0]
+        N = np.prod(z.shape[:-1])
         loss_val = (-(z_shift * y).sum(axis=-1, keepdims=True) + lse).sum() / N
 
         out = Tensor(loss_val, (self,), 'softmax_ce')
