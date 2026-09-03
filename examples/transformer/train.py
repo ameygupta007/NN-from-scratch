@@ -1,11 +1,11 @@
-from minigrad import Tensor, Transformer, save, load
 import numpy as np
-from data import load_data
+from minigrad import Tensor, Transformer, save, load
 import minigrad.optim as optim
-import gc
+from data import load_data
 
 import os
 import psutil
+import gc
 
 def get_batch(data, block_size, batch_size):
     data = np.asarray(data, dtype=np.int64)
@@ -24,6 +24,18 @@ def one_hot(y_ints, num_classes):
 
     np.put_along_axis(y_oh, y_ints[..., None], 1, axis=-1)
     return y_oh
+
+def generate(model : Transformer, length, encode, decode, start="\n"):
+    start = encode(start)
+    out = [start[0]]
+    
+
+    for i in range(length):
+        pred = np.argmax(model(np.asarray(out)[None,...]).softmax(axis=-1))
+        out.append(pred)
+
+    return decode(out)
+
 
 def train(
         model : Transformer, data, vocab_size, block_size, batch_size, steps
@@ -71,8 +83,9 @@ def tensor_census():
 
 if __name__ == '__main__':
     train_data, test_data, encode, decode, vocab_size  = load_data()
-    t = Transformer(vocab_size, 128, 4, 4, dropout_p=0.2)
+    # t = Transformer(vocab_size, 128, 4, 4, dropout_p=0.2)
     t = load("overfit.npz", Transformer)
 
-    train(t, train_data[:1000], vocab_size, block_size=64, batch_size=10, steps=100)
-    save(t, "overfit.npz")
+    # train(t, train_data[:1000], vocab_size, block_size=64, batch_size=10, steps=100)
+    # save(t, "overfit.npz")
+    print(generate(t, 30, encode, decode))
