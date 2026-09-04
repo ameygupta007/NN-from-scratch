@@ -7,6 +7,7 @@ import os
 import psutil
 import gc
 import argparse
+import time
 
 def get_batch(data, block_size, batch_size):
     data = np.asarray(data, dtype=np.int64)
@@ -27,16 +28,19 @@ def one_hot(y_ints, num_classes):
     return y_oh
 
 def train(
-        model : Transformer, data, vocab_size, block_size, batch_size, steps, save_path=None, save_every=0
+        model : Transformer, data, vocab_size, block_size, batch_size, steps, save_path=None, save_every=0, log_every=50
 ):
         
     params = model.parameters()
     optimiser = optim.Adam(params)
     loss_vals = []
     model.train()
+    
 
+    print_header()
+    start = time.time()
     try:
-        for step in range(steps):
+        for step in range(1, steps+1):
 
             x,y = get_batch(data, block_size, batch_size)
             y = one_hot(y, vocab_size)
@@ -52,24 +56,40 @@ def train(
 
             gc.collect()
 
-            if step > 0 and step % 50 == 0:
-                # TODO: make pretty
-                print(step, sum(loss_vals[-50:]) / 50, get_memory_usage(), f"live Tensors: {tensor_census()} MB")
-            if step == 0:
-                print(0, loss.data)        
+            if step == 1 or step % log_every == 0:
+                recent_loss = loss_vals[-log_every:]
+                av_loss = sum(recent_loss) / len(recent_loss)
+                print_row(step, av_loss, get_memory_usage(), time.time() - start)
 
-            if save_every and step and step % save_every == 0:
+            if save_path and save_every and step % save_every == 0:
                 save(model, save_path)
                 
     except KeyboardInterrupt:
-        print(f"\nInterrupted...")
+        print("\nInterrupted...")
 
     finally:
         if save_path:
-            print(f"Saved --> {save_path}")
             save(model, save_path)
+            print(f"Saved --> {save_path}")
 
     return model
+
+COLS = (
+    ("steps", 8),
+    ("loss", 10),
+    ("mem/mb", 8),
+    ("time/step", 10),
+    ("elapsed",8),
+)
+SEP = " | "
+def print_header():
+    print(SEP.join(f"{name:>{width}}" for name, width in COLS))
+    print("-+-".join("-"*width for _, width in COLS))
+
+def print_row(steps, loss, mem, elapsed):
+    vals = [f"{steps:>8}", f"{loss:>10.4f}", f"{mem:>8.0f}", f"{elapsed/steps:>10.2g}", f"{elapsed:>8.2f}",]
+    print(SEP.join(vals))
+
 
 def get_memory_usage():
     # Get the process ID of the current Python script
@@ -88,12 +108,13 @@ def tensor_census():
 if __name__ == '__main__':
     p = argparse.ArgumentParser( prog='TRAIN')
     p.add_argument('-r', '--resume', metavar='PATH', help='load weights from npz and continue')
-    p.add_argument('--save', metavar='PATH', default='chkpt.npz')
-    p.add_argument('--save_every', type=int, default=500)
+    p.add_argument('--save', metavar='PATH', default='models/chkpt.npz')
+    p.add_argument('--save-every', type=int, default=500)
     p.add_argument('--steps', type=int, default=5000)
     p.add_argument('--block-size', type=int, default=64)
     p.add_argument('--batch-size', type=int, default=10)
-    p.add_argument('--train-chars', type=int, default=0, help='truncate the corpus. 0 uses all of it')
+    p.add_argument('--train-chars', type=int, default=0, help='truncate the corpus (0 uses all of it)')
+    p.add_argument('--log-every', type=int, default=50)
     args = p.parse_args()
     
     train_data, test_data, encode, decode, vocab_size  = load_data()
@@ -111,6 +132,6 @@ if __name__ == '__main__':
 
     train(model, data, vocab_size, 
           args.block_size, args.batch_size, args.steps, 
-          save_path=args.save_path, save_every=args.save_every)
+          save_path=args.save, save_every=args.save_every, log_every=args.log_every)
     
 

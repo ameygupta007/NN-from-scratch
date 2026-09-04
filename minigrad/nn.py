@@ -245,10 +245,12 @@ class Transformer(Module):
     '''
     Decoder stack - token embedding, positional embedding, N transformer blocks.
     '''
-    def __init__(self, vocab_size, embed_dim, layers, heads=4, block_size=64, dropout_p=0.0):
+    def __init__(self, vocab_size, embed_dim, layers, heads=4, positional=True, block_size=64, dropout_p=0.0):
         super().__init__()
         self.token_embed = Embedding(vocab_size, embed_dim)
-        self.pos_embed = Embedding(block_size, embed_dim) 
+
+        self.pos_embed = Embedding(block_size, embed_dim)
+        self.positional = positional
 
         self.blocks = [TransformerBlock(embed_dim, heads, dropout_p) for _ in range(layers)]
         for i, block in enumerate(self.blocks):
@@ -256,10 +258,12 @@ class Transformer(Module):
 
         self.head_p = Linear(embed_dim, vocab_size)
 
-        self._config = dict(vocab_size=vocab_size, embed_dim=embed_dim, layers=layers, heads=heads, block_size=block_size, dropout_p=dropout_p)
+        self._config = dict(vocab_size=vocab_size, embed_dim=embed_dim, layers=layers, heads=heads, positional=positional, block_size=block_size, dropout_p=dropout_p)
 
     def forward(self, indices):
-        x = self.token_embed(indices) + self.pos_embed(np.arange(indices.shape[-1]))
+        x = self.token_embed(indices)
+        if self.positional:
+            x += self.pos_embed(np.arange(indices.shape[-1]))
         for b in self.blocks:
             x = b(x)
         x = self.head_p(x)
