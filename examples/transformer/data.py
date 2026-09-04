@@ -4,7 +4,9 @@ DATA_DIR = Path(__file__).resolve().parent / 'data'
 
 def load_data(dir=DATA_DIR):
     '''
-    char level tokenization. Load tinyshakespeare dataset, returning train and test data, encode and deocde functions, and vocab size.
+    char level tokenization. Load tinyshakespeare dataset.
+
+    Returns: train_data, test_data, encode, deocde, vocab_size.
     '''
     text = (Path(dir) / 'tinyshakespeare.txt').read_text(encoding='utf-8')
     chars = sorted(set(text))

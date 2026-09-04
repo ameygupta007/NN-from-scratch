@@ -26,19 +26,6 @@ def one_hot(y_ints, num_classes):
     np.put_along_axis(y_oh, y_ints[..., None], 1, axis=-1)
     return y_oh
 
-def generate(model : Transformer, length, encode, decode, block_size, start="r"):
-    model.eval()
-    out = list(encode(start))
-
-    for i in range(length):
-        context = np.asarray(out[-block_size:])[None,...]
-        logits = model(context).softmax(axis=-1).data[0,-1]
-        pred = np.random.choice(np.arange(len(logits)), p=logits)
-        out.append(pred)
-
-    return decode(out)
-
-
 def train(
         model : Transformer, data, vocab_size, block_size, batch_size, steps, save_path=None, save_every=0
 ):
@@ -63,10 +50,10 @@ def train(
             loss.backward()
             optimiser.step()
 
+            gc.collect()
 
-            if step % 1 == 0:
-                gc.collect()
             if step > 0 and step % 50 == 0:
+                # TODO: make pretty
                 print(step, sum(loss_vals[-50:]) / 50, get_memory_usage(), f"live Tensors: {tensor_census()} MB")
             if step == 0:
                 print(0, loss.data)        
@@ -124,16 +111,6 @@ if __name__ == '__main__':
 
     train(model, data, vocab_size, 
           args.block_size, args.batch_size, args.steps, 
-          save_path=args.save, save_every=args.save_every)
+          save_path=args.save_path, save_every=args.save_every)
     
 
-
-    # print('---------')
-    # print('SAMPLE:')
-    # print('---------')
-    # t = load(path, Transformer)
-    # seed = '''\n'''
-    # predicted = generate(t, 500, encode, decode, 64, start=seed)
-    # print(seed)
-    # print("-"*10)
-    # print(predicted[len(seed):])
